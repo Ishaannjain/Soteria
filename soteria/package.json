@@ -11,7 +11,9 @@
     "lint": "expo lint"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
     "@expo/vector-icons": "^15.0.3",
+    "@google/generative-ai": "^0.24.1",
     "@react-native-firebase/app": "^23.8.4",
     "@react-native-firebase/auth": "^23.8.4",
     "@react-native-firebase/firestore": "^23.8.4",
