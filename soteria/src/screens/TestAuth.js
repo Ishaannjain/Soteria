@@ -38,21 +38,35 @@ export default function TestAuth() {
     <View style={{ padding: 20 }}>
       <TextInput
         placeholder="Email"
+        placeholderTextColor="#888"
         value={email}
         onChangeText={setEmail}
-        style={{ borderWidth: 1, padding: 10, marginBottom: 10 }}
+        style={{
+          borderWidth: 1,
+          borderColor: "#ccc",
+          color: "#fff",
+          padding: 10,
+          marginBottom: 10,
+        }}
       />
       <TextInput
         placeholder="Password"
+        placeholderTextColor="#888"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
-        style={{ borderWidth: 1, padding: 10, marginBottom: 10 }}
+        style={{
+          borderWidth: 1,
+          borderColor: "#ccc",
+          color: "#fff",
+          padding: 10,
+          marginBottom: 10,
+        }}
       />
       <Button title="Sign Up" onPress={handleSignUp} />
       <Button title="Sign In" onPress={handleSignIn} />
       <Button title="Log Out" onPress={handleLogOut} />
-      <Text style={{ marginTop: 20 }}>{message}</Text>
+      <Text style={{ marginTop: 20, color: "#fff" }}>{message}</Text>
     </View>
   );
 }
