@@ -1,50 +1,165 @@
-# Welcome to your Expo app 👋
+# Soteria
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A personal safety companion app for walking and traveling alone. Named after the Greek goddess of safety and salvation.
 
-## Get started
+## Features
 
-1. Install dependencies
+### SafeWalk Sessions
+
+- Start timed walking sessions with real-time GPS tracking
+- Automatic check-in reminders before the timer expires
+- Missed check-ins automatically alert your Safety Circle
+- View your walking route on an interactive map
+
+### Safety Circles
+
+- Create groups of trusted contacts (family, friends, roommates)
+- Share your location with circle members during walks
+- Invite members via shareable links
+- Multiple circles for different contexts
+
+### Emergency SOS
+
+- One-tap emergency button sends instant alerts
+- Shares your real-time location with all circle members
+- Email notifications sent to emergency contacts
+
+### Nearby Safe Spots
+
+- Discover nearby safe locations when you need them
+- Police stations, hospitals, pharmacies, fire stations
+- 24/7 locations like gas stations and convenience stores
+- Tap to redirect your route to any safe spot
+
+### AI Assistant
+
+- Conversational interface powered by Google Gemini
+- Start walks, view circles, and trigger actions via chat
+- Get safety tips and app guidance
+
+## Tech Stack
+
+- **Framework:** React Native with Expo SDK 54
+- **Navigation:** Expo Router (file-based routing)
+- **Backend:** Firebase (Authentication, Firestore)
+- **AI:** Google Gemini API
+- **Maps:** Leaflet + OpenStreetMap, OSRM routing
+- **Places:** Google Places API
+- **Notifications:** EmailJS
+- **Language:** TypeScript
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- npm or yarn
+- Expo CLI (`npm install -g expo-cli`)
+- iOS Simulator / Android Emulator / Physical device with Expo Go
+
+### Installation
+
+1. Clone the repository
+
+   ```bash
+   git clone https://github.com/yourusername/soteria.git
+   cd soteria/soteria
+   ```
+
+2. Install dependencies
 
    ```bash
    npm install
    ```
 
-2. Start the app
+3. Set up environment variables
+
+   Create a `.env` file in the `soteria` directory:
+
+   ```env
+   EXPO_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+   EXPO_PUBLIC_GEMINI_API_KEY=your_gemini_api_key
+   ```
+
+4. Configure Firebase
+
+   Update `src/config/firebase.js` with your Firebase project credentials.
+
+5. Start the development server
 
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+6. Run on your device
+   - Scan the QR code with Expo Go (Android) or Camera app (iOS)
+   - Press `a` for Android emulator
+   - Press `i` for iOS simulator
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Project Structure
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+soteria/
+├── app/                    # Screens (Expo Router)
+│   ├── (tabs)/            # Tab navigation screens
+│   │   ├── dashboard.tsx  # Home dashboard
+│   │   ├── map.tsx        # SafeWalk map view
+│   │   ├── circles.tsx    # Safety circles
+│   │   ├── explore.tsx    # Explore safe spots
+│   │   └── profile.tsx    # User profile
+│   ├── circle/            # Circle management
+│   └── _layout.tsx        # Root layout
+├── src/
+│   ├── config/            # App configuration
+│   ├── contexts/          # React contexts
+│   ├── hooks/             # Custom hooks
+│   └── services/          # API & business logic
+│       ├── authService.js
+│       ├── circleService.js
+│       ├── sessionService.js
+│       ├── locationService.js
+│       ├── mapService.js
+│       ├── placesService.js
+│       ├── chatService.js
+│       └── emailService.js
+└── assets/                # Images and fonts
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## API Keys Setup
 
-## Learn more
+### Google Maps & Places API
 
-To learn more about developing your project with Expo, look at the following resources:
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a project and enable:
+   - Maps SDK for Android
+   - Maps SDK for iOS
+   - Places API
+3. Create an API key and add it to `.env`
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### Google Gemini API
 
-## Join the community
+1. Go to [Google AI Studio](https://makersuite.google.com/)
+2. Create an API key
+3. Add it to `.env`
 
-Join our community of developers creating universal apps.
+### Firebase
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+1. Create a project at [Firebase Console](https://console.firebase.google.com/)
+2. Enable Authentication (Email/Password)
+3. Create a Firestore database
+4. Copy your config to `src/config/firebase.js`
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License.
+
+## Acknowledgments
+
+- [Expo](https://expo.dev/) for the amazing React Native framework
+- [Firebase](https://firebase.google.com/) for backend services
+- [OpenStreetMap](https://www.openstreetmap.org/) for map data
+- [OSRM](http://project-osrm.org/) for routing services
