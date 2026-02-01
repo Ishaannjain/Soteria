@@ -483,7 +483,7 @@ export default function ChatScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#6C63FF" />
+      <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Soteria Assistant</Text>
         <Text style={styles.headerSubtitle}>I'm here to help you stay safe</Text>
@@ -502,7 +502,7 @@ export default function ChatScreen() {
 
       {isLoading && (
         <View style={styles.typingRow}>
-          <ActivityIndicator size="small" color="#6C63FF" />
+          <ActivityIndicator size="small" color="#7f13ec" />
           <Text style={styles.typingText}>Assistant is thinking...</Text>
         </View>
       )}
@@ -514,7 +514,7 @@ export default function ChatScreen() {
           onChangeText={setInputText}
           onSubmitEditing={handleSend}
           placeholder="Type a message..."
-          placeholderTextColor="#999"
+          placeholderTextColor="rgba(171,157,185,0.5)"
           multiline
           maxHeight={96}
           returnKeyType="send"
@@ -537,10 +537,10 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5FA",
+    backgroundColor: "#0a0a0a",
   },
   header: {
-    backgroundColor: "#6C63FF",
+    backgroundColor: "#0a0a0a",
     paddingTop: Platform.OS === "android" ? StatusBar.currentHeight || 40 : 56,
     paddingBottom: 16,
     paddingHorizontal: 20,
@@ -548,10 +548,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     color: "#fff",
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: "900",
   },
   headerSubtitle: {
-    color: "#D8D5FF",
+    color: "rgba(171,157,185,0.8)",
     fontSize: 13,
     marginTop: 2,
   },
@@ -572,14 +572,14 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#6C63FF",
+    backgroundColor: "rgba(127,19,236,0.2)",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 8,
     flexShrink: 0,
   },
   avatarText: {
-    color: "#fff",
+    color: "#7f13ec",
     fontSize: 14,
     fontWeight: "700",
   },
@@ -590,21 +590,18 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   userBubble: {
-    backgroundColor: "#6C63FF",
+    backgroundColor: "#7f13ec",
     borderBottomRightRadius: 4,
   },
   botBubble: {
-    backgroundColor: "#fff",
+    backgroundColor: "#16111d",
     borderBottomLeftRadius: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
   },
   bubbleText: {
     fontSize: 15,
-    color: "#1a1a2e",
+    color: "rgba(255,255,255,0.9)",
     lineHeight: 22,
   },
   userBubbleText: {
@@ -622,15 +619,15 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   actionBtn: {
-    backgroundColor: "#fff",
-    borderColor: "#6C63FF",
+    backgroundColor: "rgba(127,19,236,0.12)",
+    borderColor: "rgba(127,19,236,0.4)",
     borderWidth: 1.5,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 6,
   },
   actionBtnText: {
-    color: "#6C63FF",
+    color: "#7f13ec",
     fontSize: 14,
     fontWeight: "600",
   },
@@ -642,7 +639,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   typingText: {
-    color: "#888",
+    color: "rgba(171,157,185,0.7)",
     fontSize: 13,
     fontStyle: "italic",
   },
@@ -651,22 +648,22 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     gap: 10,
     padding: 12,
-    backgroundColor: "#fff",
+    backgroundColor: "#16111d",
     borderTopWidth: 1,
-    borderTopColor: "#E8E8EF",
+    borderTopColor: "rgba(255,255,255,0.06)",
   },
   input: {
     flex: 1,
-    backgroundColor: "#F0F0F5",
+    backgroundColor: "rgba(255,255,255,0.07)",
     borderRadius: 22,
     paddingHorizontal: 18,
     paddingVertical: 10,
     fontSize: 15,
-    color: "#1a1a2e",
+    color: "#fff",
     minHeight: 44,
   },
   sendBtn: {
-    backgroundColor: "#6C63FF",
+    backgroundColor: "#7f13ec",
     borderRadius: 22,
     paddingHorizontal: 18,
     paddingVertical: 10,
@@ -674,7 +671,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   sendBtnDisabled: {
-    backgroundColor: "#C4C1F5",
+    backgroundColor: "rgba(127,19,236,0.35)",
   },
   sendBtnText: {
     color: "#fff",

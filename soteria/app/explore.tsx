@@ -14,7 +14,7 @@ import {
 import { WebView } from 'react-native-webview';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { SOTERIA } from '../theme';
+import { SOTERIA } from './theme';
 
 // Import map services
 // @ts-ignore - JS modules without type declarations
@@ -37,6 +37,15 @@ interface SafeSpot {
   };
 }
 
+const escapeForJS = (str: string | undefined | null): string => {
+  if (!str) return "";
+  return String(str)
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'")
+    .replace(/\n/g, "\\n")
+    .replace(/\r/g, "\\r");
+};
+
 // Generate map HTML with Leaflet and routing (OpenStreetMap + OSRM - FREE)
 const generateMapHtml = (
   lat: number,
@@ -48,7 +57,7 @@ const generateMapHtml = (
     L.marker([${spot.location.lat}, ${spot.location.lng}], {
       icon: L.divIcon({
         className: 'spot-marker',
-        html: '<div style="background:${destination?.id === spot.id ? '#FF3B30' : '#007AFF'};color:white;padding:4px 8px;border-radius:12px;font-size:10px;white-space:nowrap;box-shadow:0 2px 4px rgba(0,0,0,0.3);font-weight:600;">${spot.name.substring(0, 12)}${spot.name.length > 12 ? '..' : ''}</div>',
+        html: '<div style="background:${destination?.id === spot.id ? '#FF3B30' : '#007AFF'};color:white;padding:4px 8px;border-radius:12px;font-size:10px;white-space:nowrap;box-shadow:0 2px 4px rgba(0,0,0,0.3);font-weight:600;">${escapeForJS(spot.name.substring(0, 12))}${spot.name.length > 12 ? '..' : ''}</div>',
         iconSize: [80, 24],
         iconAnchor: [40, 12]
       })
@@ -95,7 +104,7 @@ const generateMapHtml = (
       iconAnchor: [12, 12]
     });
     L.marker([${destination.location.lat}, ${destination.location.lng}], { icon: destIcon }).addTo(map)
-      .bindPopup('<b>${destination.name}</b><br>${destination.address}');
+      .bindPopup('<b>${escapeForJS(destination.name)}</b><br>${escapeForJS(destination.address)}');
   ` : '';
 
   return `

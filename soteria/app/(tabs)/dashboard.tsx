@@ -158,7 +158,7 @@ export default function Dashboard() {
         <View style={styles.sectionPad}>
           <Pressable
             style={styles.quickActionCard}
-            onPress={() => router.push("/(tabs)/explore")}
+            onPress={() => router.push("/explore" as any)}
           >
             <View style={styles.quickActionIcon}>
               <Ionicons name="location" size={22} color={SOTERIA.colors.primary} />
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   name: { color: "white", fontSize: 14, fontWeight: "800" },
 
   rightTop: { flexDirection: "row", alignItems: "center", gap: 8 },
-  logoText: { color: "white", fontSize: 18, fontWeight: "900", marginRight: 6 },
+  logoText: { color: "white", fontSize: 28, fontFamily: "Allura", marginRight: 6 },
   iconBtn: { padding: 8, borderRadius: 999, backgroundColor: "rgba(255,255,255,0.08)" },
 
   sectionPad: { paddingHorizontal: 16, paddingTop: 12 },

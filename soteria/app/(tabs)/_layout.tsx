@@ -52,11 +52,11 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="chat"
         options={{
-          title: "Safe Spots",
+          title: 'Assistant',
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? "location" : "location-outline"} size={size} color={color} />
+            <Ionicons name={focused ? "chatbubble" : "chatbubble-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -66,15 +66,6 @@ export default function TabsLayout() {
           title: "Profile",
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? "person" : "person-outline"} size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="chat"
-        options={{
-          title: 'Assistant',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? "chatbubble" : "chatbubble-outline"} size={size} color={color} />
           ),
         }}
       />

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -186,6 +186,16 @@ const generateMapHtml = (
 
         // Routing to destination
         ${routingScript}
+
+        // Listen for recenter command from React Native
+        window.addEventListener('message', function(event) {
+          try {
+            var msg = JSON.parse(event.data);
+            if (msg.type === 'RECENTER') {
+              map.setView([msg.lat, msg.lng], 15);
+            }
+          } catch(e) {}
+        });
       </script>
     </body>
     </html>
@@ -202,6 +212,16 @@ export default function MapScreen() {
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [currentDestination, setCurrentDestination] = useState<Destination | null>(null);
   const [navigatingToSafeSpot, setNavigatingToSafeSpot] = useState<SafeSpot | null>(null);
+  const webViewRef = useRef<any>(null);
+
+  const handleRecenter = () => {
+    if (webViewRef.current && userLocation) {
+      webViewRef.current.postMessage(
+        JSON.stringify({ type: "RECENTER", lat: userLocation.lat, lng: userLocation.lng }),
+        "*"
+      );
+    }
+  };
 
   // Use session monitor hook
   const { timeRemaining, needsCheckIn, handleCheckIn, triggerSOS } = useSessionMonitor(
@@ -419,6 +439,7 @@ export default function MapScreen() {
       <View style={styles.mapContainer}>
         {userLocation && !loadingSpots ? (
           <WebView
+            ref={webViewRef}
             key={currentDestination?.name || 'no-dest'}
             source={{
               html: generateMapHtml(
@@ -439,6 +460,22 @@ export default function MapScreen() {
           </View>
         )}
 
+        {/* Recenter button */}
+        <Pressable
+          style={[styles.recenterBtn, navigatingToSafeSpot && styles.recenterBtnUp]}
+          onPress={handleRecenter}
+        >
+          <Ionicons name="locate" size={20} color="white" />
+        </Pressable>
+
+        {/* SOS FLOATING BUTTON */}
+        <View style={styles.sosFabWrap} pointerEvents="box-none">
+          <Pressable style={styles.sosFab} onPress={handleSOS}>
+            <Ionicons name="warning" size={20} color="white" />
+            <Text style={styles.sosFabText}>SOS</Text>
+          </Pressable>
+        </View>
+
         {/* Navigation info overlay */}
         {navigatingToSafeSpot && (
           <View style={styles.navOverlay}>
@@ -456,14 +493,6 @@ export default function MapScreen() {
         )}
       </View>
 
-      {/* SOS FLOATING BUTTON */}
-      <View style={styles.sosFabWrap} pointerEvents="box-none">
-        <Pressable style={styles.sosFab} onPress={handleSOS}>
-          <Ionicons name="warning" size={26} color="white" />
-          <Text style={styles.sosFabText}>SOS</Text>
-        </Pressable>
-      </View>
-
       {/* DRAGGABLE BOTTOM SHEET */}
       <BottomSheet
         index={0}
@@ -475,7 +504,7 @@ export default function MapScreen() {
         <BottomSheetScrollView style={styles.sheetInner}>
           <View style={styles.sheetHeader}>
             <Text style={styles.sheetTitle}>Nearby Safe Spots</Text>
-            <Pressable onPress={() => router.push("/(tabs)/explore")}>
+            <Pressable onPress={() => router.push("/explore" as any)}>
               <Text style={styles.sheetLink}>View All</Text>
             </Pressable>
           </View>
@@ -691,24 +720,41 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
+  recenterBtn: {
+    position: "absolute",
+    bottom: 12,
+    right: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 999,
+    backgroundColor: "rgba(22,17,29,0.9)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 999,
+  },
+  recenterBtnUp: {
+    bottom: 68,
+  },
+
   sosFabWrap: {
     position: "absolute",
-    right: 28,
-    bottom: 180,
+    top: 10,
+    right: 10,
     zIndex: 999,
-    elevation: 999,
   },
   sosFab: {
-    width: 70,
-    height: 70,
+    width: 56,
+    height: 56,
     borderRadius: 999,
     backgroundColor: "#ef4444",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 4,
+    borderWidth: 3,
     borderColor: "#0a0a0a",
   },
-  sosFabText: { color: "white", fontSize: 10, fontWeight: "900", marginTop: 2 },
+  sosFabText: { color: "white", fontSize: 9, fontWeight: "900", marginTop: 2 },
 
   sheet: {
     backgroundColor: "#191022",

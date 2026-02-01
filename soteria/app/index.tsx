@@ -78,9 +78,6 @@ export default function LoginScreen() {
         <View style={styles.content}>
           {/* Logo */}
           <View style={styles.brand}>
-            <View style={styles.logo}>
-              <Ionicons name="shield-checkmark" size={42} color={SOTERIA.colors.primary} />
-            </View>
             <Text style={styles.appName}>Soteria</Text>
             <Text style={styles.tagline}>Your personal safety companion</Text>
           </View>
@@ -174,19 +171,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 32,
   },
-  logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 16,
-    backgroundColor: "rgba(127,19,236,0.2)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 12,
-  },
   appName: {
     color: "white",
-    fontSize: 32,
-    fontWeight: "700",
+    fontSize: 56,
+    fontFamily: "Allura",
   },
   tagline: {
     color: SOTERIA.colors.muted,
