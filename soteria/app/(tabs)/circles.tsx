@@ -7,9 +7,16 @@ import { SOTERIA } from "../theme";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { getUserCircles, createCircle, getCircle, addMemberToCircle } from "../../src/services/circleService";
 
+interface Circle {
+  id: string;
+  name: string;
+  members?: Array<{ userId?: string; email?: string; name?: string; phone?: string }>;
+  ownerId?: string;
+}
+
 export default function CirclesScreen() {
-  const { user, profile } = useAuth();
-  const [circles, setCircles] = useState([]);
+  const { user, profile } = useAuth() as any;
+  const [circles, setCircles] = useState<Circle[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
@@ -60,14 +67,14 @@ export default function CirclesScreen() {
     }
   };
 
-  const promptForCircleName = () => {
+  const promptForCircleName = (): Promise<string | null> => {
     return new Promise((resolve) => {
       Alert.prompt(
         "Create New Circle",
         "Enter a name for your circle:",
         [
           { text: "Cancel", style: "cancel", onPress: () => resolve(null) },
-          { text: "Create", onPress: (name) => resolve(name) },
+          { text: "Create", onPress: (name?: string) => resolve(name || null) },
         ],
         "plain-text"
       );
@@ -85,8 +92,8 @@ export default function CirclesScreen() {
       const circle = await getCircle(joinCode.trim());
 
       // Check if already a member
-      const isMember = circle.members?.some(
-        (member) => member.email === user.email || member.userId === user.uid
+      const isMember = (circle as Circle).members?.some(
+        (member: any) => member.email === user.email || member.userId === user.uid
       );
 
       if (isMember) {
@@ -106,7 +113,7 @@ export default function CirclesScreen() {
       };
 
       await addMemberToCircle(joinCode.trim(), memberData);
-      Alert.alert("Success", `You've joined "${circle.name}"!`);
+      Alert.alert("Success", `You've joined "${(circle as Circle).name}"!`);
       setShowJoinModal(false);
       setJoinCode("");
       loadCircles();
@@ -215,7 +222,7 @@ export default function CirclesScreen() {
                     subtitle={`${circle.members?.length || 0} members • Active`}
                     active
                     image={`https://picsum.photos/300/300?random=${index + 11}`}
-                    avatars={circle.members?.slice(0, 3).map((_, i) =>
+                    avatars={circle.members?.slice(0, 3).map((_: any, i: number) =>
                       `https://i.pravatar.cc/100?img=${i + 12}`
                     ) || []}
                   />

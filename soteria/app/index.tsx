@@ -13,7 +13,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { user, signIn, signUp } = useAuth();
+  const { user, signIn, signUp } = useAuth() as any;
 
   // Redirect to dashboard if already logged in
   useEffect(() => {
@@ -33,7 +33,7 @@ export default function LoginScreen() {
       setError("");
       await signIn(email, password);
       router.replace("/(tabs)/dashboard");
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message || "Failed to sign in");
     } finally {
       setLoading(false);
@@ -51,7 +51,7 @@ export default function LoginScreen() {
       setError("");
       await signUp(email, password);
       router.replace("/(tabs)/dashboard");
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message || "Failed to sign up");
     } finally {
       setLoading(false);

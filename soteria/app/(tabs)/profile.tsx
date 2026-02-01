@@ -19,7 +19,7 @@ import { updateUserProfile } from "../../src/services/userService";
 import { updateMemberProfileInCircles } from "../../src/services/circleService";
 
 export default function ProfileScreen() {
-  const { user, profile, logOut, refreshProfile } = useAuth();
+  const { user, profile, logOut, refreshProfile } = useAuth() as any;
   const [name, setName] = useState("");
   const [handle, setHandle] = useState("");
   const [shareDefault, setShareDefault] = useState(true);
