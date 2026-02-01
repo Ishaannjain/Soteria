@@ -1,6 +1,6 @@
 # Soteria
 
-A personal safety companion app for walking and traveling alone. Named after the Greek goddess of safety and salvation.
+Inspired by the Greek goddess of protection, Soteria is a women-first safety app that builds trust circles with friends and family, sends SOS alerts, and guides users to the nearest safe spaces.
 
 ## Features
 
