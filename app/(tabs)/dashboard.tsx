@@ -1,12 +1,23 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { SOTERIA } from "../theme";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { getUserCircles } from "../../src/services/circleService";
-import { getActiveSession, triggerEmergency } from "../../src/services/sessionService";
+import {
+  getActiveSession,
+  triggerEmergency,
+} from "../../src/services/sessionService";
+import { SOTERIA } from "../theme";
 
 interface Circle {
   id: string;
@@ -31,7 +42,7 @@ export default function Dashboard() {
       setLoading(true);
       const [userCircles, session] = await Promise.all([
         getUserCircles(user.uid),
-        getActiveSession(user.uid)
+        getActiveSession(user.uid),
       ]);
       console.log("Loaded circles:", userCircles);
       console.log("User ID:", user.uid);
@@ -63,23 +74,34 @@ export default function Dashboard() {
             try {
               if (activeSession) {
                 await triggerEmergency(activeSession.id);
-                Alert.alert("SOS Sent", "Emergency alert has been sent to your circle members");
+                Alert.alert(
+                  "SOS Sent",
+                  "Emergency alert has been sent to your circle members",
+                );
               } else {
-                Alert.alert("No Active Session", "Please start a SafeWalk session first");
+                Alert.alert(
+                  "No Active Session",
+                  "Please start a SafeWalk session first",
+                );
               }
             } catch (error) {
               console.error("Error sending SOS:", error);
               Alert.alert("Error", "Failed to send SOS");
             }
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
 
   if (!user) {
     return (
-      <View style={[styles.root, { justifyContent: "center", alignItems: "center" }]}>
+      <View
+        style={[
+          styles.root,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
         <ActivityIndicator size="large" color={SOTERIA.colors.primary} />
       </View>
     );
@@ -98,15 +120,17 @@ export default function Dashboard() {
             <Ionicons name="person" size={24} color={SOTERIA.colors.primary} />
           </View>
           <View>
-            <Text style={styles.smallMuted}>Good evening,</Text>
-            <Text style={styles.name}>{profile?.name || user?.email?.split('@')[0] || "User"}</Text>
+            <Text style={styles.smallMuted}>Hello,</Text>
+            <Text style={styles.name}>
+              {profile?.name || user?.email?.split("@")[0] || "User"}
+            </Text>
           </View>
         </View>
 
         <View style={styles.rightTop}>
           <Text style={styles.logoText}>Soteria</Text>
-          <Pressable style={styles.iconBtn}>
-            <Ionicons name="notifications-outline" size={20} color="white" />
+          <Pressable style={styles.iconBtn} onPress={() => router.push("/(tabs)/profile")}>
+            <Ionicons name="settings-outline" size={20} color="white" />
           </Pressable>
         </View>
       </View>
@@ -136,12 +160,17 @@ export default function Dashboard() {
               </View>
               <Text style={styles.heroTitle}>Start SafeWalk</Text>
               <Text style={styles.heroDesc}>
-                Share your temporary location with your trusted circles while you're on the move.
+                Share your temporary location with your trusted circles while
+                you're on the move.
               </Text>
 
               <Pressable style={styles.heroBtn} onPress={handleBeginSession}>
                 <Text style={styles.heroBtnText}>Begin Session</Text>
-                <Ionicons name="arrow-forward" size={18} color={SOTERIA.colors.primary} />
+                <Ionicons
+                  name="arrow-forward"
+                  size={18}
+                  color={SOTERIA.colors.primary}
+                />
               </Pressable>
             </View>
 
@@ -161,13 +190,23 @@ export default function Dashboard() {
             onPress={() => router.push("/explore" as any)}
           >
             <View style={styles.quickActionIcon}>
-              <Ionicons name="location" size={22} color={SOTERIA.colors.primary} />
+              <Ionicons
+                name="location"
+                size={22}
+                color={SOTERIA.colors.primary}
+              />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.quickActionTitle}>Find Safe Spots</Text>
-              <Text style={styles.quickActionDesc}>Discover nearby safe locations</Text>
+              <Text style={styles.quickActionDesc}>
+                Discover nearby safe locations
+              </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.4)" />
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color="rgba(255,255,255,0.4)"
+            />
           </Pressable>
         </View>
 
@@ -181,7 +220,9 @@ export default function Dashboard() {
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={{ flexDirection: "row", gap: 14, paddingVertical: 10 }}>
+            <View
+              style={{ flexDirection: "row", gap: 14, paddingVertical: 10 }}
+            >
               {loading ? (
                 <ActivityIndicator color={SOTERIA.colors.primary} />
               ) : (
@@ -195,8 +236,15 @@ export default function Dashboard() {
                       active={false}
                     />
                   ))}
-                  <Pressable style={styles.newCircle} onPress={() => router.push("/(tabs)/circles")}>
-                    <Ionicons name="add-circle" size={22} color={SOTERIA.colors.primary} />
+                  <Pressable
+                    style={styles.newCircle}
+                    onPress={() => router.push("/(tabs)/circles")}
+                  >
+                    <Ionicons
+                      name="add-circle"
+                      size={22}
+                      color={SOTERIA.colors.primary}
+                    />
                     <Text style={styles.newCircleText}>New Circle</Text>
                   </Pressable>
                 </>
@@ -210,8 +258,16 @@ export default function Dashboard() {
           <Text style={styles.sectionTitle}>Recent Sessions</Text>
 
           <View style={{ marginTop: 12, gap: 10 }}>
-            <SessionRow icon="map" title="Walk to Central Station" meta="Yesterday, 10:45 PM • 18 mins" />
-            <SessionRow icon="home" title="Ride from Downtown" meta="Tue, 11:20 PM • 24 mins" />
+            <SessionRow
+              icon="map"
+              title="Walk to Central Station"
+              meta="Yesterday, 10:45 PM • 18 mins"
+            />
+            <SessionRow
+              icon="home"
+              title="Ride from Downtown"
+              meta="Tue, 11:20 PM • 24 mins"
+            />
           </View>
         </View>
 
@@ -227,25 +283,50 @@ export default function Dashboard() {
   );
 }
 
-function CircleCard({ title, subtitle, active, id }: { title: string; subtitle: string; active?: boolean; id?: string }) {
+function CircleCard({
+  title,
+  subtitle,
+  active,
+  id,
+}: {
+  title: string;
+  subtitle: string;
+  active?: boolean;
+  id?: string;
+}) {
   return (
     <Pressable
       style={styles.circleCard}
       onPress={() => id && router.push(`/circle/${id}` as any)}
     >
       <View style={{ position: "relative", marginBottom: 10 }}>
-        <View style={[styles.circleAvatarRing, { borderColor: active ? SOTERIA.colors.primary : "#334155" }]}>
+        <View
+          style={[
+            styles.circleAvatarRing,
+            { borderColor: active ? SOTERIA.colors.primary : "#334155" },
+          ]}
+        >
           <Ionicons name="people" size={32} color={SOTERIA.colors.primary} />
         </View>
         {active ? <View style={styles.activeDot} /> : null}
       </View>
-      <Text style={styles.circleTitle} numberOfLines={1}>{title}</Text>
+      <Text style={styles.circleTitle} numberOfLines={1}>
+        {title}
+      </Text>
       <Text style={styles.circleSub}>{subtitle}</Text>
     </Pressable>
   );
 }
 
-function SessionRow({ icon, title, meta }: { icon: any; title: string; meta: string }) {
+function SessionRow({
+  icon,
+  title,
+  meta,
+}: {
+  icon: any;
+  title: string;
+  meta: string;
+}) {
   return (
     <View style={styles.sessionRow}>
       <View style={styles.sessionLeft}>
@@ -266,7 +347,15 @@ function SessionRow({ icon, title, meta }: { icon: any; title: string; meta: str
   );
 }
 
-function TabItem({ label, icon, active }: { label: string; icon: any; active?: boolean }) {
+function TabItem({
+  label,
+  icon,
+  active,
+}: {
+  label: string;
+  icon: any;
+  active?: boolean;
+}) {
   return (
     <Pressable style={styles.tabItem}>
       <Ionicons
@@ -274,7 +363,9 @@ function TabItem({ label, icon, active }: { label: string; icon: any; active?: b
         size={22}
         color={active ? SOTERIA.colors.primary : "rgba(171,157,185,0.9)"}
       />
-      <Text style={[styles.tabLabel, active ? styles.tabLabelActive : null]}>{label}</Text>
+      <Text style={[styles.tabLabel, active ? styles.tabLabelActive : null]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -308,8 +399,17 @@ const styles = StyleSheet.create({
   name: { color: "white", fontSize: 14, fontWeight: "800" },
 
   rightTop: { flexDirection: "row", alignItems: "center", gap: 8 },
-  logoText: { color: "white", fontSize: 28, fontFamily: "Allura", marginRight: 6 },
-  iconBtn: { padding: 8, borderRadius: 999, backgroundColor: "rgba(255,255,255,0.08)" },
+  logoText: {
+    color: "white",
+    fontSize: 28,
+    fontFamily: "Allura",
+    marginRight: 6,
+  },
+  iconBtn: {
+    padding: 8,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.08)",
+  },
 
   sectionPad: { paddingHorizontal: 16, paddingTop: 12 },
 
@@ -341,10 +441,25 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginBottom: 10,
   },
-  pillText: { color: "white", fontSize: 10, fontWeight: "900", letterSpacing: 0.8 },
+  pillText: {
+    color: "white",
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 0.8,
+  },
 
-  heroTitle: { color: "white", fontSize: 26, fontWeight: "900", marginBottom: 8 },
-  heroDesc: { color: "rgba(255,255,255,0.80)", fontSize: 13, maxWidth: 270, marginBottom: 14 },
+  heroTitle: {
+    color: "white",
+    fontSize: 26,
+    fontWeight: "900",
+    marginBottom: 8,
+  },
+  heroDesc: {
+    color: "rgba(255,255,255,0.80)",
+    fontSize: 13,
+    maxWidth: 270,
+    marginBottom: 14,
+  },
 
   heroBtn: {
     flexDirection: "row",
@@ -377,9 +492,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   quickActionTitle: { color: "white", fontSize: 15, fontWeight: "800" },
-  quickActionDesc: { color: "rgba(171,157,185,0.8)", fontSize: 12, marginTop: 2 },
+  quickActionDesc: {
+    color: "rgba(171,157,185,0.8)",
+    fontSize: 12,
+    marginTop: 2,
+  },
 
-  rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  rowBetween: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   sectionTitle: { color: "white", fontSize: 18, fontWeight: "900" },
   link: { color: SOTERIA.colors.primary, fontSize: 13, fontWeight: "800" },
 

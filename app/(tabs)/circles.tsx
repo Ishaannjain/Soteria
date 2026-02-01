@@ -133,7 +133,7 @@ export default function CirclesScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Your Circles</Text>
-        <Pressable style={styles.iconBtn}>
+        <Pressable style={styles.iconBtn} onPress={() => router.push("/(tabs)/profile")}>
           <Ionicons name="settings-outline" size={20} color="white" />
         </Pressable>
       </View>

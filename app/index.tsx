@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, SafeAreaView, TextInput, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, SafeAreaView, TextInput, Pressable, ActivityIndicator, KeyboardAvoidingView } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
@@ -75,77 +75,79 @@ export default function LoginScreen() {
           <View style={{ width: 24 }} />
         </View>
 
-        <View style={styles.content}>
-          {/* Logo */}
-          <View style={styles.brand}>
-            <Text style={styles.appName}>Soteria</Text>
-            <Text style={styles.tagline}>Your personal safety companion</Text>
-          </View>
-
-          {/* Glass card */}
-          <BlurView intensity={20} tint="dark" style={styles.card}>
-            <Text style={styles.label}>Email Address</Text>
-            <TextInput
-              placeholder="name@example.com"
-              placeholderTextColor={SOTERIA.colors.border}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              editable={!loading}
-              style={styles.input}
-            />
-
-            <Text style={[styles.label, { marginTop: 16 }]}>Password</Text>
-            <View>
-              <TextInput
-                placeholder="••••••••"
-                placeholderTextColor={SOTERIA.colors.border}
-                secureTextEntry={!showPw}
-                value={password}
-                onChangeText={setPassword}
-                editable={!loading}
-                style={[styles.input, { paddingRight: 44 }]}
-              />
-              <Pressable
-                style={styles.eye}
-                onPress={() => setShowPw(!showPw)}
-              >
-                <Ionicons
-                  name={showPw ? "eye-off" : "eye"}
-                  size={20}
-                  color={SOTERIA.colors.muted}
-                />
-              </Pressable>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+          <View style={styles.content}>
+            {/* Logo */}
+            <View style={styles.brand}>
+              <Text style={styles.appName}>Soteria</Text>
+              <Text style={styles.tagline}>Your personal safety companion</Text>
             </View>
 
-            {error ? (
-              <Text style={styles.error}>{error}</Text>
-            ) : null}
+            {/* Glass card */}
+            <BlurView intensity={20} tint="dark" style={styles.card}>
+              <Text style={styles.label}>Email Address</Text>
+              <TextInput
+                placeholder="name@example.com"
+                placeholderTextColor={SOTERIA.colors.border}
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                editable={!loading}
+                style={styles.input}
+              />
 
-            <Pressable
-              style={[styles.signIn, loading && styles.signInDisabled]}
-              onPress={handleSignIn}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text style={styles.signInText}>Sign In</Text>
-              )}
-            </Pressable>
+              <Text style={[styles.label, { marginTop: 16 }]}>Password</Text>
+              <View>
+                <TextInput
+                  placeholder="••••••••"
+                  placeholderTextColor={SOTERIA.colors.border}
+                  secureTextEntry={!showPw}
+                  value={password}
+                  onChangeText={setPassword}
+                  editable={!loading}
+                  style={[styles.input, { paddingRight: 44 }]}
+                />
+                <Pressable
+                  style={styles.eye}
+                  onPress={() => setShowPw(!showPw)}
+                >
+                  <Ionicons
+                    name={showPw ? "eye-off" : "eye"}
+                    size={20}
+                    color={SOTERIA.colors.muted}
+                  />
+                </Pressable>
+              </View>
 
-          </BlurView>
+              {error ? (
+                <Text style={styles.error}>{error}</Text>
+              ) : null}
 
-          <Pressable onPress={handleSignUp} disabled={loading}>
-            <Text style={styles.footer}>
-              Don't have an account?
-              <Text style={{ color: SOTERIA.colors.primary, fontWeight: "800" }}>
-                {" "}Sign Up
+              <Pressable
+                style={[styles.signIn, loading && styles.signInDisabled]}
+                onPress={handleSignIn}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text style={styles.signInText}>Sign In</Text>
+                )}
+              </Pressable>
+
+            </BlurView>
+
+            <Pressable onPress={handleSignUp} disabled={loading}>
+              <Text style={styles.footer}>
+                Don't have an account?
+                <Text style={{ color: SOTERIA.colors.primary, fontWeight: "800" }}>
+                  {" "}Sign Up
+                </Text>
               </Text>
-            </Text>
-          </Pressable>
-        </View>
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </View>
   );

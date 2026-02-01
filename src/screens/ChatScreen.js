@@ -1,28 +1,31 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
-  Alert,
+  ScrollView,
   StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { logOut, onAuthChange } from "../services/authService";
 import { sendMessage } from "../services/chatService";
-import { onAuthChange, logOut } from "../services/authService";
-import { getCurrentLocation, requestLocationPermission } from "../services/locationService";
 import { getUserCircles } from "../services/circleService";
+import { sendEmergencyAlert } from "../services/emailService";
 import {
-  startSafeWalkSession,
+  getCurrentLocation,
+  requestLocationPermission,
+} from "../services/locationService";
+import {
   getActiveSession,
   getSessionHistory,
+  startSafeWalkSession,
   triggerEmergency,
 } from "../services/sessionService";
-import { sendEmergencyAlert } from "../services/emailService";
 import { getUserProfile } from "../services/userService";
 
 const WELCOME_TEXT =
@@ -51,7 +54,9 @@ export default function ChatScreen() {
     const unsubscribe = onAuthChange((user) => {
       setCurrentUser(user);
       if (user) {
-        getUserCircles(user.uid).then(setUserCircles).catch(() => setUserCircles([]));
+        getUserCircles(user.uid)
+          .then(setUserCircles)
+          .catch(() => setUserCircles([]));
       } else {
         setUserCircles([]);
       }
@@ -71,7 +76,12 @@ export default function ChatScreen() {
   const addMessage = (role, text, actions = []) => {
     setMessages((prev) => [
       ...prev,
-      { id: Date.now().toString() + Math.random().toString(36).slice(2), role, text, actions },
+      {
+        id: Date.now().toString() + Math.random().toString(36).slice(2),
+        role,
+        text,
+        actions,
+      },
     ]);
   };
 
@@ -101,7 +111,8 @@ export default function ChatScreen() {
         contextPrefix += " User has no Safety Circles set up yet.";
       }
     } else {
-      contextPrefix += "User is NOT logged in. They need to sign in before any actions can be performed.";
+      contextPrefix +=
+        "User is NOT logged in. They need to sign in before any actions can be performed.";
     }
     contextPrefix += "]\n\n";
     const messageForGemini = contextPrefix + text;
@@ -113,11 +124,16 @@ export default function ChatScreen() {
 
     setIsLoading(true);
     try {
-      const { cleanText, actions, rawText } = await sendMessage(geminiHistory, messageForGemini);
+      const { cleanText, actions, rawText } = await sendMessage(
+        geminiHistory,
+        messageForGemini,
+      );
 
       // Split actions: safe ones auto-execute, dangerous ones stay as buttons
       const confirmTypes = ["TRIGGER_EMERGENCY", "LOGOUT"];
-      const buttonActions = actions.filter((a) => confirmTypes.includes(a.type));
+      const buttonActions = actions.filter((a) =>
+        confirmTypes.includes(a.type),
+      );
       const autoActions = actions.filter((a) => !confirmTypes.includes(a.type));
 
       addMessage("bot", cleanText, buttonActions);
@@ -134,7 +150,7 @@ export default function ChatScreen() {
         "bot",
         error.message.includes("API key")
           ? "The chatbot isn't set up yet — the Gemini API key needs to be added. Please check the app configuration."
-          : `Something went wrong: ${error.message}`
+          : `Something went wrong: ${error.message}`,
       );
     } finally {
       setIsLoading(false);
@@ -150,8 +166,12 @@ export default function ChatScreen() {
         "This will send an emergency alert with your location to everyone in your Safety Circle. Are you sure?",
         [
           { text: "Cancel", style: "cancel" },
-          { text: "Yes, Alert Now", style: "destructive", onPress: handleTriggerEmergency },
-        ]
+          {
+            text: "Yes, Alert Now",
+            style: "destructive",
+            onPress: handleTriggerEmergency,
+          },
+        ],
       );
       return;
     }
@@ -164,10 +184,19 @@ export default function ChatScreen() {
             try {
               await logOut();
               addMessage("user", "Sign out");
-              addMessage("bot", "You've been signed out. Thank you for using Soteria! Stay safe out there.");
-              updateHistoryFromAction("Sign out", "User signed out successfully.");
+              addMessage(
+                "bot",
+                "You've been signed out. Thank you for using Soteria! Stay safe out there.",
+              );
+              updateHistoryFromAction(
+                "Sign out",
+                "User signed out successfully.",
+              );
             } catch (e) {
-              addMessage("bot", "Couldn't sign out right now. Please try again.");
+              addMessage(
+                "bot",
+                "Couldn't sign out right now. Please try again.",
+              );
             }
           },
         },
@@ -181,7 +210,8 @@ export default function ChatScreen() {
       VIEW_CIRCLES: handleViewCircles,
       VIEW_SESSION_HISTORY: handleViewSessionHistory,
     };
-    if (handlers[action.type]) handlers[action.type](action.params || {}, autoExecuted);
+    if (handlers[action.type])
+      handlers[action.type](action.params || {}, autoExecuted);
   };
 
   // --- Action: Start SafeWalk ---
@@ -196,15 +226,16 @@ export default function ChatScreen() {
     // Match circle name from Gemini to an actual circle ID
     let circleId = null;
     if (params.circle && userCircles.length > 0) {
-      const matched = userCircles.find(
-        (c) => (c.name || "").toLowerCase().includes(params.circle.toLowerCase())
+      const matched = userCircles.find((c) =>
+        (c.name || "").toLowerCase().includes(params.circle.toLowerCase()),
       );
       if (matched) circleId = matched.id;
     }
 
     try {
       if (!currentUser) {
-        const msg = "You need to be logged in to start a walk. Please sign in first.";
+        const msg =
+          "You need to be logged in to start a walk. Please sign in first.";
         addMessage("bot", msg);
         updateHistoryFromAction("Start a walk", msg);
         return;
@@ -253,7 +284,8 @@ export default function ChatScreen() {
     setIsLoading(true);
     try {
       if (!currentUser) {
-        const msg = "You need to be logged in to trigger an emergency. Please sign in first.";
+        const msg =
+          "You need to be logged in to trigger an emergency. Please sign in first.";
         addMessage("bot", msg);
         updateHistoryFromAction("Trigger emergency", msg);
         return;
@@ -287,7 +319,7 @@ export default function ChatScreen() {
         await sendEmergencyAlert(
           profile.name || currentUser.email,
           location,
-          recipientEmails
+          recipientEmails,
         );
         msg =
           "🚨 Emergency alert sent!\n\n" +
@@ -355,7 +387,8 @@ export default function ChatScreen() {
     setIsLoading(true);
     try {
       if (!currentUser) {
-        const msg = "You need to be logged in to view your Safety Circles. Please sign in first.";
+        const msg =
+          "You need to be logged in to view your Safety Circles. Please sign in first.";
         addMessage("bot", msg);
         updateHistoryFromAction("Show Safety Circles", msg);
         return;
@@ -402,7 +435,10 @@ export default function ChatScreen() {
     return new Date(timestamp).toLocaleDateString();
   };
 
-  const handleViewSessionHistory = async (params = {}, autoExecuted = false) => {
+  const handleViewSessionHistory = async (
+    params = {},
+    autoExecuted = false,
+  ) => {
     if (!autoExecuted) addMessage("user", "Show my session history");
     setIsLoading(true);
     try {
@@ -418,7 +454,9 @@ export default function ChatScreen() {
         const msg =
           "You haven't completed any SafeWalk sessions yet.\n\n" +
           "Start your first one to begin tracking your walks!";
-        addMessage("bot", msg, [{ type: "START_SAFEWALK", label: "Start a SafeWalk" }]);
+        addMessage("bot", msg, [
+          { type: "START_SAFEWALK", label: "Start a SafeWalk" },
+        ]);
         updateHistoryFromAction("Show session history", msg);
         return;
       }
@@ -426,9 +464,17 @@ export default function ChatScreen() {
       let msg = "📋 Your Recent SafeWalk Sessions:\n\n";
       sessions.slice(0, 5).forEach((session, i) => {
         const statusIcon =
-          session.status === "completed" ? "✅" : session.status === "emergency" ? "🚨" : "⏳";
+          session.status === "completed"
+            ? "✅"
+            : session.status === "emergency"
+              ? "🚨"
+              : "⏳";
         const statusLabel =
-          session.status === "completed" ? "Completed" : session.status === "emergency" ? "Emergency" : "Active";
+          session.status === "completed"
+            ? "Completed"
+            : session.status === "emergency"
+              ? "Emergency"
+              : "Active";
         msg += `${i + 1}. ${statusIcon} ${statusLabel} — ${formatSessionDate(session.startTime)}\n`;
       });
 
@@ -455,8 +501,15 @@ export default function ChatScreen() {
               <Text style={styles.avatarText}>S</Text>
             </View>
           )}
-          <View style={[styles.bubble, isUser ? styles.userBubble : styles.botBubble]}>
-            <Text style={[styles.bubbleText, isUser && styles.userBubbleText]}>{item.text}</Text>
+          <View
+            style={[
+              styles.bubble,
+              isUser ? styles.userBubble : styles.botBubble,
+            ]}
+          >
+            <Text style={[styles.bubbleText, isUser && styles.userBubbleText]}>
+              {item.text}
+            </Text>
           </View>
         </View>
         {item.actions?.length > 0 && (
@@ -485,15 +538,19 @@ export default function ChatScreen() {
     >
       <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Soteria Assistant</Text>
-        <Text style={styles.headerSubtitle}>I'm here to help you stay safe</Text>
+        <Text style={styles.headerTitle}>Soteria AI</Text>
+        <Text style={styles.headerSubtitle}>
+          I'm here to help you stay safe
+        </Text>
       </View>
 
       <ScrollView
         ref={scrollRef}
         style={{ flex: 1 }}
         contentContainerStyle={styles.list}
-        onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
+        onContentSizeChange={() =>
+          scrollRef.current?.scrollToEnd({ animated: false })
+        }
       >
         {messages.map((item) => (
           <React.Fragment key={item.id}>{renderItem({ item })}</React.Fragment>
@@ -503,7 +560,7 @@ export default function ChatScreen() {
       {isLoading && (
         <View style={styles.typingRow}>
           <ActivityIndicator size="small" color="#7f13ec" />
-          <Text style={styles.typingText}>Assistant is thinking...</Text>
+          <Text style={styles.typingText}>Soteria AI is thinking...</Text>
         </View>
       )}
 
