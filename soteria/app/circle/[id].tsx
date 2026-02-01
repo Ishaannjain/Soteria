@@ -20,7 +20,7 @@ import { startSafeWalkSession } from "../../src/services/sessionService";
 
 export default function CircleDetails() {
   const { id } = useLocalSearchParams();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [circle, setCircle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showAddMember, setShowAddMember] = useState(false);
@@ -59,6 +59,7 @@ export default function CircleDetails() {
         name: memberName || memberEmail.split('@')[0],
         email: memberEmail,
         phone: memberPhone,
+        photoURL: "", // Will be filled when they join
         status: "pending", // Mark as pending until they join
       };
 
@@ -412,6 +413,12 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(127,19,236,0.2)",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  memberAvatarImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 999,
   },
   memberName: {
     color: "white",

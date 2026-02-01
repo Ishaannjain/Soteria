@@ -131,3 +131,51 @@ export const deleteCircle = async (circleId) => {
     throw error;
   }
 };
+
+/**
+ * Update user's profile data in all their circles
+ * @param {string} userId - User ID
+ * @param {object} profileData - {name, phone}
+ */
+export const updateMemberProfileInCircles = async (userId, profileData) => {
+  try {
+    console.log("Updating member profile in all circles for user:", userId);
+
+    // Get all circles to check membership
+    const allCirclesQuery = query(collection(db, 'circles'));
+    const allCirclesSnapshot = await getDocs(allCirclesQuery);
+
+    const updatePromises = [];
+
+    // Update in all circles where user is a member
+    allCirclesSnapshot.forEach((circleDoc) => {
+      const circleData = circleDoc.data();
+      const members = circleData.members || [];
+
+      // Find if this user is a member
+      const memberIndex = members.findIndex(m => m.userId === userId || m.email === profileData.email);
+
+      if (memberIndex !== -1) {
+        // Update the member's data
+        const updatedMembers = [...members];
+        updatedMembers[memberIndex] = {
+          ...updatedMembers[memberIndex],
+          name: profileData.name,
+          phone: profileData.phone || updatedMembers[memberIndex].phone || "",
+        };
+
+        // Update the circle with new members array
+        const circleRef = doc(db, 'circles', circleDoc.id);
+        updatePromises.push(
+          updateDoc(circleRef, { members: updatedMembers })
+        );
+      }
+    });
+
+    await Promise.all(updatePromises);
+    console.log(`Updated profile in ${updatePromises.length} circles`);
+  } catch (error) {
+    console.error("Error updating member profile in circles:", error);
+    throw error;
+  }
+};

@@ -8,7 +8,7 @@ import { useAuth } from "../../src/contexts/AuthContext";
 import { getUserCircles, createCircle, getCircle, addMemberToCircle } from "../../src/services/circleService";
 
 export default function CirclesScreen() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [circles, setCircles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -44,9 +44,9 @@ export default function CirclesScreen() {
         members: [
           {
             userId: user.uid,
-            name: user.email?.split('@')[0] || "User",
+            name: profile?.name || user.email?.split('@')[0] || "User",
             email: user.email,
-            phone: "",
+            phone: profile?.phone || "",
           },
         ],
       };
@@ -99,9 +99,9 @@ export default function CirclesScreen() {
       // Add user to circle
       const memberData = {
         userId: user.uid,
-        name: user.email?.split('@')[0] || "User",
+        name: profile?.name || user.email?.split('@')[0] || "User",
         email: user.email,
-        phone: "",
+        phone: profile?.phone || "",
         status: "active",
       };
 

@@ -1,30 +1,74 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  Image,
   Pressable,
   TextInput,
   Switch,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { SOTERIA } from "../theme";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { router } from "expo-router";
+import { updateUserProfile } from "../../src/services/userService";
+import { updateMemberProfileInCircles } from "../../src/services/circleService";
 
 export default function ProfileScreen() {
-  const { user, logOut } = useAuth();
-  const [name, setName] = useState(user?.email?.split('@')[0] || "User");
-  const [handle, setHandle] = useState(`@${user?.email?.split('@')[0] || "user"}`);
+  const { user, profile, logOut, refreshProfile } = useAuth();
+  const [name, setName] = useState("");
+  const [handle, setHandle] = useState("");
   const [shareDefault, setShareDefault] = useState(true);
   const [quietMode, setQuietMode] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const [emgName, setEmgName] = useState("");
   const [emgPhone, setEmgPhone] = useState("");
+
+  // Initialize state from profile data
+  useEffect(() => {
+    if (profile) {
+      setName(profile.name || user?.email?.split('@')[0] || "User");
+      setHandle(profile.username || `@${user?.email?.split('@')[0] || "user"}`);
+    }
+  }, [profile, user]);
+
+  const handleSaveProfile = async () => {
+    if (!name.trim()) {
+      Alert.alert('Error', 'Display name cannot be empty');
+      return;
+    }
+
+    try {
+      setUploading(true);
+
+      // Update profile in Firestore
+      await updateUserProfile(user.uid, {
+        name: name.trim(),
+        username: handle.trim(),
+      });
+
+      // Update member profile in all circles
+      await updateMemberProfileInCircles(user.uid, {
+        name: name.trim(),
+        email: user.email,
+      });
+
+      // Refresh AuthContext profile
+      await refreshProfile();
+
+      Alert.alert('Success', 'Profile updated successfully!');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      Alert.alert('Error', 'Failed to save profile changes');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSignOut = async () => {
     Alert.alert(
@@ -60,14 +104,11 @@ export default function ProfileScreen() {
       <View style={styles.topBar}>
         <View style={styles.profileRow}>
           <View style={styles.avatarRing}>
-            <Image
-              source={{ uri: "https://i.pravatar.cc/120?img=32" }}
-              style={styles.avatar}
-            />
+            <Ionicons name="person" size={24} color={SOTERIA.colors.primary} />
           </View>
           <View>
             <Text style={styles.smallMuted}>Profile</Text>
-            <Text style={styles.nameText}>{user?.email?.split('@')[0] || "User"}</Text>
+            <Text style={styles.nameText}>{profile?.name || user?.email?.split('@')[0] || "User"}</Text>
           </View>
         </View>
 
@@ -92,6 +133,21 @@ export default function ProfileScreen() {
 
             <Field label="Display Name" value={name} onChangeText={setName} />
             <Field label="Username" value={handle} onChangeText={setHandle} />
+
+            <Pressable
+              style={[styles.primaryGhostBtn, { marginTop: 14 }]}
+              onPress={handleSaveProfile}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <ActivityIndicator size="small" color={SOTERIA.colors.primary} />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle-outline" size={18} color={SOTERIA.colors.primary} />
+                  <Text style={styles.primaryGhostText}>Save Changes</Text>
+                </>
+              )}
+            </Pressable>
 
             <View style={styles.divider} />
 
@@ -158,40 +214,12 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Safety + Privacy */}
+        {/* Help & Support */}
         <View style={styles.sectionPad}>
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View style={styles.cardIcon}>
-                <Ionicons name="shield-checkmark" size={18} color={SOTERIA.colors.primary} />
-              </View>
-              <Text style={styles.cardTitle}>Safety & Privacy</Text>
-            </View>
-
-            <Pressable style={styles.menuRow}>
-              <View style={styles.menuLeft}>
-                <Ionicons name="lock-closed-outline" size={18} color="rgba(171,157,185,0.9)" />
-                <Text style={styles.menuText}>Privacy settings</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="rgba(171,157,185,0.7)" />
-            </Pressable>
-
-            <Pressable style={styles.menuRow}>
-              <View style={styles.menuLeft}>
-                <Ionicons name="notifications-outline" size={18} color="rgba(171,157,185,0.9)" />
-                <Text style={styles.menuText}>Notification settings</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="rgba(171,157,185,0.7)" />
-            </Pressable>
-
-            <Pressable style={styles.menuRow}>
-              <View style={styles.menuLeft}>
-                <Ionicons name="help-circle-outline" size={18} color="rgba(171,157,185,0.9)" />
-                <Text style={styles.menuText}>Help & Support</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="rgba(171,157,185,0.7)" />
-            </Pressable>
-          </View>
+          <Pressable style={styles.helpBtn} onPress={() => router.push("/(tabs)/chat")}>
+            <Ionicons name="help-circle-outline" size={20} color={SOTERIA.colors.primary} />
+            <Text style={styles.helpText}>Help & Support</Text>
+          </Pressable>
         </View>
 
         {/* Sign Out */}
@@ -290,9 +318,10 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 2,
     borderColor: "rgba(140,43,238,0.30)",
-    overflow: "hidden",
+    backgroundColor: "rgba(140,43,238,0.14)",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  avatar: { width: "100%", height: "100%" },
 
   smallMuted: { color: "rgba(171,157,185,0.9)", fontSize: 11 },
   nameText: { color: "white", fontSize: 14, fontWeight: "900" },
@@ -395,6 +424,19 @@ const styles = StyleSheet.create({
   },
   menuLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
   menuText: { color: "white", fontWeight: "900" },
+
+  helpBtn: {
+    height: 54,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(140,43,238,0.35)",
+    backgroundColor: "rgba(140,43,238,0.10)",
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 10,
+  },
+  helpText: { color: SOTERIA.colors.primary, fontWeight: "900" },
 
   signOutBtn: {
     height: 54,

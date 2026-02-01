@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 /**
@@ -12,9 +12,12 @@ export const createUserProfile = async (userId, userData) => {
     await setDoc(userRef, {
       email: userData.email,
       name: userData.name || '',
+      username: userData.username || '',
       phone: userData.phone || '',
+      photoURL: userData.photoURL || '',
       circles: [], // Empty array initially
-      createdAt: new Date()
+      createdAt: new Date(),
+      updatedAt: new Date()
     });
     console.log("User profile created successfully");
   } catch (error) {
@@ -45,14 +48,18 @@ export const getUserProfile = async (userId) => {
 };
 
 /**
- * Update user profile
+ * Update user profile (creates if doesn't exist)
  * @param {string} userId - Firebase Auth UID
  * @param {object} updates - Fields to update
  */
 export const updateUserProfile = async (userId, updates) => {
   try {
     const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, updates);
+    // Use setDoc with merge to create document if it doesn't exist
+    await setDoc(userRef, {
+      ...updates,
+      updatedAt: new Date()
+    }, { merge: true });
     console.log("User profile updated");
   } catch (error) {
     console.error("Error updating user profile:", error);
