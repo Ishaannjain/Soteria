@@ -1,6 +1,3 @@
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Fonts } from '@/constants/theme';
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
 import {
@@ -11,8 +8,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
+  Text,
+  Pressable,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { SOTERIA } from '../theme';
 
 // Import map services
 // @ts-ignore - JS modules without type declarations
@@ -321,20 +323,22 @@ export default function SafeSpotsScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={styles.container}>
+      <LinearGradient
+        colors={["#0a0a0a", "#0a0a0a"]}
+        style={StyleSheet.absoluteFill}
+      />
       {/* Header */}
       <View style={styles.header}>
-        <ThemedText type="title" style={styles.title}>
-          Safe Spots
-        </ThemedText>
-        <ThemedText style={styles.status}>{testStatus}</ThemedText>
+        <Text style={styles.title}>Safe Spots</Text>
+        <Text style={styles.status}>{testStatus}</Text>
       </View>
 
       {/* Live Map with Directions */}
       <View style={[styles.mapContainer, destination && styles.mapContainerExpanded]}>
         {location ? (
           <WebView
-            key={destination?.id || 'no-dest'} // Force re-render when destination changes
+            key={destination?.id || 'no-dest'}
             source={{ html: generateMapHtml(location.lat, location.lng, safeSpots, destination) }}
             style={styles.map}
             scrollEnabled={false}
@@ -342,8 +346,8 @@ export default function SafeSpotsScreen() {
           />
         ) : (
           <View style={styles.mapLoading}>
-            <ActivityIndicator size="large" color="#007AFF" />
-            <ThemedText style={styles.mapLoadingText}>Getting your location...</ThemedText>
+            <ActivityIndicator size="large" color={SOTERIA.colors.primary} />
+            <Text style={styles.mapLoadingText}>Getting your location...</Text>
           </View>
         )}
       </View>
@@ -352,155 +356,163 @@ export default function SafeSpotsScreen() {
       {destination && (
         <View style={styles.navigationBar}>
           <View style={styles.navInfo}>
-            <ThemedText style={styles.navIcon}>{getIconForType(destination.type)}</ThemedText>
+            <Text style={styles.navIcon}>{getIconForType(destination.type)}</Text>
             <View style={styles.navDetails}>
-              <ThemedText style={styles.navName}>{destination.name}</ThemedText>
-              <ThemedText style={styles.navAddress}>{destination.address}</ThemedText>
+              <Text style={styles.navName}>{destination.name}</Text>
+              <Text style={styles.navAddress}>{destination.address}</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.cancelButton} onPress={clearNavigation}>
-            <ThemedText style={styles.cancelButtonText}>End</ThemedText>
-          </TouchableOpacity>
+          <Pressable style={styles.cancelButton} onPress={clearNavigation}>
+            <Text style={styles.cancelButtonText}>End</Text>
+          </Pressable>
         </View>
       )}
 
       {/* Quick Actions - Hide when navigating */}
       {!destination && (
         <View style={styles.quickActions}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.emergencyButton]}
+          <Pressable
+            style={[styles.actionButton, styles.emergencyButton, (!location || loading) && styles.buttonDisabled]}
             onPress={navigateToNearest}
             disabled={loading || !location}
           >
-            <ThemedText style={styles.actionButtonText}>
+            <Ionicons name="navigate" size={20} color="white" style={{ marginRight: 8 }} />
+            <Text style={styles.actionButtonText}>
               Get to Nearest Safe Spot
-            </ThemedText>
-          </TouchableOpacity>
+            </Text>
+          </Pressable>
         </View>
       )}
 
       {/* Filter Tabs - Hide when navigating */}
       {!destination && (
         <View style={styles.filterTabs}>
-          <TouchableOpacity
+          <Pressable
             style={[styles.filterTab, activeFilter === 'all' && styles.filterTabActive]}
             onPress={() => setActiveFilter('all')}
           >
-            <ThemedText style={[styles.filterTabText, activeFilter === 'all' && styles.filterTabTextActive]}>
+            <Text style={[styles.filterTabText, activeFilter === 'all' && styles.filterTabTextActive]}>
               All
-            </ThemedText>
-          </TouchableOpacity>
-          <TouchableOpacity
+            </Text>
+          </Pressable>
+          <Pressable
             style={[styles.filterTab, activeFilter === 'emergency' && styles.filterTabActive]}
             onPress={() => setActiveFilter('emergency')}
           >
-            <ThemedText style={[styles.filterTabText, activeFilter === 'emergency' && styles.filterTabTextActive]}>
+            <Text style={[styles.filterTabText, activeFilter === 'emergency' && styles.filterTabTextActive]}>
               Emergency
-            </ThemedText>
-          </TouchableOpacity>
-          <TouchableOpacity
+            </Text>
+          </Pressable>
+          <Pressable
             style={[styles.filterTab, activeFilter === 'safe' && styles.filterTabActive]}
             onPress={() => setActiveFilter('safe')}
           >
-            <ThemedText style={[styles.filterTabText, activeFilter === 'safe' && styles.filterTabTextActive]}>
+            <Text style={[styles.filterTabText, activeFilter === 'safe' && styles.filterTabTextActive]}>
               24/7 Open
-            </ThemedText>
-          </TouchableOpacity>
+            </Text>
+          </Pressable>
         </View>
       )}
 
       {/* Search Button - Hide when navigating */}
       {!destination && (
-        <TouchableOpacity
-          style={[styles.searchButton, (!location || loading) && styles.searchButtonDisabled]}
+        <Pressable
+          style={[styles.searchButton, (!location || loading) && styles.buttonDisabled]}
           onPress={findSafeSpots}
           disabled={loading || !location}
         >
           {loading ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <ThemedText style={styles.searchButtonText}>
-              Find Safe Spots Nearby
-            </ThemedText>
+            <>
+              <Ionicons name="search" size={18} color="white" style={{ marginRight: 8 }} />
+              <Text style={styles.searchButtonText}>
+                Find Safe Spots Nearby
+              </Text>
+            </>
           )}
-        </TouchableOpacity>
+        </Pressable>
       )}
 
       {/* Results List - Hide when navigating */}
       {!destination && (
-        <ScrollView style={styles.resultsList} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.resultsList} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
           {getFilteredSpots().length > 0 ? (
             getFilteredSpots().map((spot) => (
-              <TouchableOpacity
+              <Pressable
                 key={spot.id}
                 style={styles.spotCard}
                 onPress={() => showDirections(spot)}
-                activeOpacity={0.7}
               >
                 <View style={styles.spotIcon}>
-                  <ThemedText style={styles.spotIconText}>
+                  <Text style={styles.spotIconText}>
                     {getIconForType(spot.type)}
-                  </ThemedText>
+                  </Text>
                 </View>
                 <View style={styles.spotInfo}>
-                  <ThemedText style={styles.spotName}>{spot.name}</ThemedText>
-                  <ThemedText style={styles.spotAddress}>{spot.address}</ThemedText>
+                  <Text style={styles.spotName}>{spot.name}</Text>
+                  <Text style={styles.spotAddress}>{spot.address}</Text>
                   <View style={styles.spotMeta}>
-                    <ThemedText style={styles.spotDistance}>
+                    <Text style={styles.spotDistance}>
                       {formatDistance(spot.distance)}
-                    </ThemedText>
-                    <ThemedText style={styles.spotType}>
+                    </Text>
+                    <Text style={styles.spotType}>
                       {spot.type.replace('_', ' ')}
-                    </ThemedText>
+                    </Text>
                   </View>
                 </View>
                 <View style={styles.directionsButton}>
-                  <ThemedText style={styles.directionsText}>Go</ThemedText>
+                  <Ionicons name="navigate" size={18} color={SOTERIA.colors.primary} />
                 </View>
-              </TouchableOpacity>
+              </Pressable>
             ))
           ) : (
             <View style={styles.emptyState}>
-              <ThemedText style={styles.emptyStateIcon}>📍</ThemedText>
-              <ThemedText style={styles.emptyStateText}>
+              <Ionicons name="location-outline" size={48} color="rgba(171,157,185,0.5)" />
+              <Text style={styles.emptyStateText}>
                 {location
                   ? 'Tap "Find Safe Spots Nearby" to search'
                   : 'Waiting for location...'}
-              </ThemedText>
+              </Text>
             </View>
           )}
         </ScrollView>
       )}
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#0a0a0a',
   },
   header: {
     padding: 16,
-    paddingTop: Platform.OS === 'ios' ? 60 : 20,
+    paddingTop: Platform.OS === 'ios' ? 60 : 50,
     paddingBottom: 12,
   },
   title: {
-    fontFamily: Fonts?.rounded,
+    color: 'white',
+    fontSize: 28,
+    fontWeight: '900',
   },
   status: {
     marginTop: 4,
-    fontSize: 14,
-    opacity: 0.6,
+    fontSize: 13,
+    color: 'rgba(171,157,185,0.9)',
   },
   mapContainer: {
-    height: 200,
+    height: 180,
     marginHorizontal: 16,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#16111d',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   mapContainerExpanded: {
-    height: 350,
+    height: 320,
   },
   map: {
     flex: 1,
@@ -509,25 +521,23 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#16111d',
   },
   mapLoadingText: {
     marginTop: 12,
     fontSize: 14,
-    opacity: 0.6,
+    color: 'rgba(171,157,185,0.9)',
   },
   navigationBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     margin: 16,
-    padding: 16,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    padding: 14,
+    backgroundColor: '#16111d',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   navInfo: {
     flexDirection: 'row',
@@ -542,23 +552,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   navName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
+    color: 'white',
     marginBottom: 2,
   },
   navAddress: {
     fontSize: 12,
-    opacity: 0.6,
+    color: 'rgba(171,157,185,0.9)',
   },
   cancelButton: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#ef4444',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: 12,
   },
   cancelButtonText: {
     color: '#FFFFFF',
-    fontWeight: '600',
+    fontWeight: '800',
   },
   quickActions: {
     padding: 16,
@@ -566,16 +577,21 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   emergencyButton: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: '#ef4444',
+  },
+  buttonDisabled: {
+    opacity: 0.5,
   },
   actionButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
   },
   filterTabs: {
     flexDirection: 'row',
@@ -586,35 +602,34 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     alignItems: 'center',
   },
   filterTabActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: SOTERIA.colors.primary,
   },
   filterTabText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#666',
+    fontWeight: '700',
+    color: 'rgba(171,157,185,0.9)',
   },
   filterTabTextActive: {
     color: '#FFFFFF',
   },
   searchButton: {
     margin: 16,
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: '#34C759',
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: SOTERIA.colors.primary,
     alignItems: 'center',
-  },
-  searchButtonDisabled: {
-    backgroundColor: '#ccc',
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   searchButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '800',
   },
   resultsList: {
     flex: 1,
@@ -623,80 +638,70 @@ const styles = StyleSheet.create({
   spotCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    padding: 14,
+    backgroundColor: '#16111d',
+    borderRadius: 16,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   spotIcon: {
     width: 48,
     height: 48,
-    borderRadius: 24,
-    backgroundColor: '#f5f5f5',
+    borderRadius: 14,
+    backgroundColor: 'rgba(140,43,238,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   spotIconText: {
-    fontSize: 24,
+    fontSize: 22,
   },
   spotInfo: {
     flex: 1,
     marginLeft: 12,
   },
   spotName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '800',
+    color: 'white',
     marginBottom: 2,
   },
   spotAddress: {
-    fontSize: 13,
-    opacity: 0.6,
+    fontSize: 12,
+    color: 'rgba(171,157,185,0.7)',
     marginBottom: 4,
   },
   spotMeta: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
   },
   spotDistance: {
     fontSize: 12,
-    color: '#007AFF',
-    fontWeight: '600',
+    color: SOTERIA.colors.primary,
+    fontWeight: '700',
   },
   spotType: {
-    fontSize: 12,
-    opacity: 0.5,
+    fontSize: 11,
+    color: 'rgba(171,157,185,0.6)',
     textTransform: 'capitalize',
   },
   directionsButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#007AFF',
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(140,43,238,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  directionsText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  emptyStateIcon: {
-    fontSize: 48,
-    marginBottom: 16,
+    paddingVertical: 50,
+    gap: 12,
   },
   emptyStateText: {
-    fontSize: 16,
-    opacity: 0.6,
+    fontSize: 14,
+    color: 'rgba(171,157,185,0.7)',
     textAlign: 'center',
   },
 });

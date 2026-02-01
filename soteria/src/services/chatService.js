@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // PASTE YOUR GEMINI API KEY HERE — get one free at https://aistudio.google.com
-const GEMINI_API_KEY = "AIzaSyDc4MW4Ixda0RKDURCgxSM8bFvghFdVa-Y";
+const GEMINI_API_KEY = "AIzaSyDgWkGgGIswCVERkvjI_oRJZsVNq0r8FA0";
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
@@ -112,7 +112,7 @@ export function parseActions(text) {
 export async function sendMessage(history, userMessage) {
   if (GEMINI_API_KEY === "YOUR_GEMINI_API_KEY_HERE") {
     throw new Error(
-      "Gemini API key is not set. Please add your key in src/services/chatService.js"
+      "Gemini API key is not set. Please add your key in src/services/chatService.js",
     );
   }
 

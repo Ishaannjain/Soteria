@@ -45,9 +45,18 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="map"
         options={{
-          title: "Map",
+          title: "SafeWalk",
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? "compass" : "compass-outline"} size={size} color={color} />
+            <Ionicons name={focused ? "walk" : "walk-outline"} size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="explore"
+        options={{
+          title: "Safe Spots",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "location" : "location-outline"} size={size} color={color} />
           ),
         }}
       />
