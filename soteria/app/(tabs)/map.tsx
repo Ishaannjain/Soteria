@@ -42,6 +42,16 @@ interface Destination {
   location?: { lat: number; lng: number };
 }
 
+// Escape a string so it is safe to embed inside a single-quoted JS string literal
+const escapeForJS = (str: string | undefined | null): string => {
+  if (!str) return "";
+  return String(str)
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'")
+    .replace(/\n/g, "\\n")
+    .replace(/\r/g, "\\r");
+};
+
 // Generate map HTML with Leaflet and routing
 const generateMapHtml = (
   userLat: number,
@@ -89,7 +99,7 @@ const generateMapHtml = (
       iconAnchor: [14, 14]
     });
     L.marker([${destination.location.lat}, ${destination.location.lng}], { icon: destIcon }).addTo(map)
-      .bindPopup('<b>${destination.name}</b><br>${destination.address || "Destination"}');
+      .bindPopup('<b>${escapeForJS(destination.name)}</b><br>${escapeForJS(destination.address || "Destination")}');
   ` : '';
 
   // Generate markers for safe spots (smaller, subtle markers)
@@ -103,7 +113,7 @@ const generateMapHtml = (
         weight: 2,
         opacity: 1,
         fillOpacity: 0.8
-      }).addTo(map).bindPopup('<b>${spot.name}</b><br>${spot.type.replace('_', ' ')}');
+      }).addTo(map).bindPopup('<b>${escapeForJS(spot.name)}</b><br>${escapeForJS(spot.type.replace('_', ' '))}');
     `;
   }).join('\n');
 
@@ -188,7 +198,7 @@ export default function MapScreen() {
   const [loading, setLoading] = useState(true);
   const [circles, setCircles] = useState<any[]>([]);
   const [safeSpots, setSafeSpots] = useState<SafeSpot[]>([]);
-  const [loadingSpots, setLoadingSpots] = useState(false);
+  const [loadingSpots, setLoadingSpots] = useState(true);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [currentDestination, setCurrentDestination] = useState<Destination | null>(null);
   const [navigatingToSafeSpot, setNavigatingToSafeSpot] = useState<SafeSpot | null>(null);
@@ -407,7 +417,7 @@ export default function MapScreen() {
 
       {/* INTERACTIVE MAP */}
       <View style={styles.mapContainer}>
-        {userLocation ? (
+        {userLocation && !loadingSpots ? (
           <WebView
             key={currentDestination?.name || 'no-dest'}
             source={{
