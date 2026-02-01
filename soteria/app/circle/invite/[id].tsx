@@ -7,16 +7,10 @@ import { SOTERIA } from "../../theme";
 import { useAuth } from "../../../src/contexts/AuthContext";
 import { getCircle, addMemberToCircle } from "../../../src/services/circleService";
 
-interface Circle {
-  id: string;
-  name: string;
-  members?: Array<{ userId?: string; email?: string; name?: string; phone?: string }>;
-}
-
 export default function CircleInvite() {
   const { id } = useLocalSearchParams();
-  const { user } = useAuth() as any;
-  const [circle, setCircle] = useState<Circle | null>(null);
+  const { user } = useAuth();
+  const [circle, setCircle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [joined, setJoined] = useState(false);
@@ -34,12 +28,12 @@ export default function CircleInvite() {
       setLoading(true);
 
       // Get circle details
-      const circleData = await getCircle(id as string) as Circle;
+      const circleData = await getCircle(id as string);
       setCircle(circleData);
 
       // Check if user is already a member
       const isMember = circleData.members?.some(
-        (member: any) => member.email === user.email || member.userId === user.uid
+        (member) => member.email === user.email || member.userId === user.uid
       );
 
       if (isMember) {

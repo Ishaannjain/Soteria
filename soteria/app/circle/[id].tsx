@@ -18,18 +18,10 @@ import { useAuth } from "../../src/contexts/AuthContext";
 import { getCircle, addMemberToCircle } from "../../src/services/circleService";
 import { startSafeWalkSession } from "../../src/services/sessionService";
 
-interface Circle {
-  id: string;
-  name: string;
-  members?: Array<{ userId?: string; email?: string; name?: string; phone?: string }>;
-  ownerId?: string;
-  createdAt?: any;
-}
-
 export default function CircleDetails() {
   const { id } = useLocalSearchParams();
-  const { user, profile } = useAuth() as any;
-  const [circle, setCircle] = useState<Circle | null>(null);
+  const { user, profile } = useAuth();
+  const [circle, setCircle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showAddMember, setShowAddMember] = useState(false);
   const [memberEmail, setMemberEmail] = useState("");
@@ -46,7 +38,7 @@ export default function CircleDetails() {
     try {
       setLoading(true);
       const circleData = await getCircle(id as string);
-      setCircle(circleData as Circle);
+      setCircle(circleData);
     } catch (error) {
       console.error("Error loading circle:", error);
       Alert.alert("Error", "Failed to load circle details");
@@ -220,7 +212,7 @@ export default function CircleDetails() {
           )}
 
           {circle?.members && circle.members.length > 0 ? (
-            circle.members.map((member: any, index: number) => (
+            circle.members.map((member, index) => (
               <View key={index} style={styles.memberCard}>
                 <View style={styles.memberInfo}>
                   <View style={styles.memberAvatar}>
