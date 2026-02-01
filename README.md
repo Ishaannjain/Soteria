@@ -62,8 +62,8 @@ Inspired by the Greek goddess of protection, Soteria is a women-first safety app
 1. Clone the repository
 
    ```bash
-   git clone https://github.com/yourusername/soteria.git
-   cd soteria/soteria
+   git clone https://github.com/Ishaannjain/Soteria.git
+   cd soteria
    ```
 
 2. Install dependencies
