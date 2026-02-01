@@ -1,7 +1,7 @@
 // EmailJS configuration
-const EMAILJS_SERVICE_ID = "service_i65n67m";
-const EMAILJS_TEMPLATE_ID = "template_iod5xte";
-const EMAILJS_PUBLIC_KEY = "1RwOeqIi50oQZx9_G";
+const EMAILJS_SERVICE_ID = process.env.EXPO_PUBLIC_EMAILJS_SERVICE_ID;
+const EMAILJS_TEMPLATE_ID = process.env.EXPO_PUBLIC_EMAILJS_TEMPLATE_ID;
+const EMAILJS_PUBLIC_KEY = process.env.EXPO_PUBLIC_EMAILJS_PUBLIC_KEY;
 
 /**
  * Send email using EmailJS REST API (works in React Native)

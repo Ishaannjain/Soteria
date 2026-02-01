@@ -5,13 +5,13 @@ import { initializeApp } from 'firebase/app';
 
    // Your Firebase configuration (paste from Firebase Console)
  const firebaseConfig = {
-  apiKey: "AIzaSyDDWD-l8JeZt8xSKCLydmUgOdAh0obpE64",
-  authDomain: "soteria-20e8e.firebaseapp.com",
-  projectId: "soteria-20e8e",
-  storageBucket: "soteria-20e8e.firebasestorage.app",
-  messagingSenderId: "647120633668",
-  appId: "1:647120633668:web:a4c49f32ba96e8a5066111",
-  measurementId: "G-4B35GC3EP5"
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
    // Initialize Firebase
