@@ -4,7 +4,7 @@
  */
 
 import { getCurrentLocation } from './locationService';
-import { findNearbySafeSpots, SAFE_LOCATION_TYPES } from './placesService';
+import { findNearbySafeSpots, SAFE_LOCATION_TYPES, formatDistance, formatWalkingTime } from './placesService';
 import { GOOGLE_MAPS_CONFIG, isGoogleMapsConfigured } from '../config/maps';
 
 // Cache for safe spots to avoid excessive API calls
@@ -162,7 +162,7 @@ export const prepareMapMarkers = (userLocation, safeSpots = []) => {
         longitude: spot.location.lng
       },
       title: spot.name,
-      description: `${spot.address} • ${spot.distance}m away`,
+      description: `${spot.address} • ${formatDistance(spot.distance)} • ${formatWalkingTime(spot.distance)}`,
       type: spot.type,
       pinColor: getPinColorForType(spot.type)
     });

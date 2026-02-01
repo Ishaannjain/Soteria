@@ -80,12 +80,12 @@ const generateMapHtml = (
 
           // Show route info
           var duration = Math.round(route.duration / 60);
-          var distance = (route.distance / 1000).toFixed(1);
+          var distanceMiles = (route.distance / 1609.34).toFixed(1);
 
           document.getElementById('route-info').innerHTML =
             '<div style="background:rgba(140,43,238,0.9);padding:8px 12px;border-radius:8px;color:white;font-family:system-ui;">' +
             '<div style="font-weight:600;">' + duration + ' min walk</div>' +
-            '<div style="font-size:11px;opacity:0.8;">' + distance + ' km to destination</div>' +
+            '<div style="font-size:11px;opacity:0.8;">' + distanceMiles + ' mi to destination</div>' +
             '</div>';
         }
       })

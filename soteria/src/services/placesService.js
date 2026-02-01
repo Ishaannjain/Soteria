@@ -141,15 +141,45 @@ const calculateDistance = (lat1, lng1, lat2, lng2) => {
 };
 
 /**
- * Format distance for display
+ * Format distance for display (in miles)
  * @param {number} meters - Distance in meters
  * @returns {string} Formatted distance string
  */
 export const formatDistance = (meters) => {
-  if (meters < 1000) {
-    return `${Math.round(meters)}m`;
+  const miles = meters / 1609.34;
+  if (miles < 0.1) {
+    // Show feet for very short distances
+    const feet = Math.round(meters * 3.28084);
+    return `${feet} ft`;
   }
-  return `${(meters / 1000).toFixed(1)}km`;
+  return `${miles.toFixed(1)} mi`;
+};
+
+/**
+ * Format estimated walking time
+ * @param {number} meters - Distance in meters
+ * @returns {string} Formatted walking time string
+ */
+export const formatWalkingTime = (meters) => {
+  // Average walking speed: ~3 mph = ~80 meters per minute
+  const walkingSpeedMetersPerMin = 80;
+  const minutes = Math.round(meters / walkingSpeedMetersPerMin);
+
+  if (minutes < 1) {
+    return '< 1 min walk';
+  }
+  if (minutes === 1) {
+    return '1 min walk';
+  }
+  if (minutes >= 60) {
+    const hours = Math.floor(minutes / 60);
+    const remainingMins = minutes % 60;
+    if (remainingMins === 0) {
+      return `${hours} hr walk`;
+    }
+    return `${hours} hr ${remainingMins} min walk`;
+  }
+  return `${minutes} min walk`;
 };
 
 /**
