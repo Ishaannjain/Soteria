@@ -149,10 +149,6 @@ soteria/
 3. Create a Firestore database
 4. Copy your config to `src/config/firebase.js`
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
 ## License
 
 This project is licensed under the MIT License.
