@@ -1,13 +1,62 @@
-import { View, Text, StyleSheet, SafeAreaView, TextInput, Pressable } from "react-native";
+import { View, Text, StyleSheet, SafeAreaView, TextInput, Pressable, ActivityIndicator } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SOTERIA } from "./theme";
 import { router } from "expo-router";
+import { useAuth } from "../src/contexts/AuthContext";
 
 export default function LoginScreen() {
   const [showPw, setShowPw] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { user, signIn, signUp } = useAuth();
+
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    if (user) {
+      router.replace("/(tabs)/dashboard");
+    }
+  }, [user]);
+
+  const handleSignIn = async () => {
+    if (!email || !password) {
+      setError("Please enter email and password");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+      await signIn(email, password);
+      router.replace("/(tabs)/dashboard");
+    } catch (err) {
+      setError(err.message || "Failed to sign in");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignUp = async () => {
+    if (!email || !password) {
+      setError("Please enter email and password");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+      await signUp(email, password);
+      router.replace("/(tabs)/dashboard");
+    } catch (err) {
+      setError(err.message || "Failed to sign up");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -42,6 +91,11 @@ export default function LoginScreen() {
             <TextInput
               placeholder="name@example.com"
               placeholderTextColor={SOTERIA.colors.border}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              editable={!loading}
               style={styles.input}
             />
 
@@ -51,6 +105,9 @@ export default function LoginScreen() {
                 placeholder="••••••••"
                 placeholderTextColor={SOTERIA.colors.border}
                 secureTextEntry={!showPw}
+                value={password}
+                onChangeText={setPassword}
+                editable={!loading}
                 style={[styles.input, { paddingRight: 44 }]}
               />
               <Pressable
@@ -65,18 +122,32 @@ export default function LoginScreen() {
               </Pressable>
             </View>
 
-            <Pressable style={styles.signIn} onPress={() => router.push("/(tabs)/dashboard")}>
-  <Text style={styles.signInText}>Sign In</Text>
-</Pressable>
+            {error ? (
+              <Text style={styles.error}>{error}</Text>
+            ) : null}
+
+            <Pressable
+              style={[styles.signIn, loading && styles.signInDisabled]}
+              onPress={handleSignIn}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.signInText}>Sign In</Text>
+              )}
+            </Pressable>
 
           </BlurView>
 
-          <Text style={styles.footer}>
-            Don’t have an account?
-            <Text style={{ color: SOTERIA.colors.primary, fontWeight: "800" }}>
-              {" "}Sign Up
+          <Pressable onPress={handleSignUp} disabled={loading}>
+            <Text style={styles.footer}>
+              Don't have an account?
+              <Text style={{ color: SOTERIA.colors.primary, fontWeight: "800" }}>
+                {" "}Sign Up
+              </Text>
             </Text>
-          </Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     </View>
@@ -159,6 +230,15 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "800",
+  },
+  signInDisabled: {
+    opacity: 0.5,
+  },
+  error: {
+    color: "#ef4444",
+    fontSize: 13,
+    marginTop: 10,
+    textAlign: "center",
   },
   footer: {
     marginTop: 24,

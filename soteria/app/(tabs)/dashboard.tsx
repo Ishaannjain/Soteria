@@ -1,12 +1,59 @@
-import React from "react";
-import { View, Text, StyleSheet, Pressable, Image, ScrollView } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, Pressable, Image, ScrollView, ActivityIndicator } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { SOTERIA } from "../theme";
 import { router } from "expo-router";
-
+import { useAuth } from "../../src/contexts/AuthContext";
+import { getUserCircles } from "../../src/services/circleService";
+import { getActiveSession } from "../../src/services/sessionService";
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const [circles, setCircles] = useState([]);
+  const [activeSession, setActiveSession] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      loadUserData();
+    }
+  }, [user]);
+
+  const loadUserData = async () => {
+    try {
+      setLoading(true);
+      const [userCircles, session] = await Promise.all([
+        getUserCircles(user.uid),
+        getActiveSession(user.uid)
+      ]);
+      console.log("Loaded circles:", userCircles);
+      console.log("User ID:", user.uid);
+      setCircles(userCircles);
+      setActiveSession(session);
+    } catch (error) {
+      console.error("Error loading user data:", error);
+      console.error("Full error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBeginSession = () => {
+    if (circles.length === 0) {
+      router.push("/(tabs)/circles");
+    } else {
+      router.push("/(tabs)/map");
+    }
+  };
+
+  if (!user) {
+    return (
+      <View style={[styles.root, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator size="large" color={SOTERIA.colors.primary} />
+      </View>
+    );
+  }
   return (
     <View style={styles.root}>
       <LinearGradient
@@ -25,7 +72,7 @@ export default function Dashboard() {
           </View>
           <View>
             <Text style={styles.smallMuted}>Good evening,</Text>
-            <Text style={styles.name}>Sarah Jenkins</Text>
+            <Text style={styles.name}>{user?.email?.split('@')[0] || "User"}</Text>
           </View>
         </View>
 
@@ -65,7 +112,7 @@ export default function Dashboard() {
                 Share your temporary location with your trusted circles while you're on the move.
               </Text>
 
-              <Pressable style={styles.heroBtn}>
+              <Pressable style={styles.heroBtn} onPress={handleBeginSession}>
                 <Text style={styles.heroBtnText}>Begin Session</Text>
                 <Ionicons name="arrow-forward" size={18} color={SOTERIA.colors.primary} />
               </Pressable>
@@ -92,8 +139,22 @@ export default function Dashboard() {
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={{ flexDirection: "row", gap: 14, paddingVertical: 10 }}>
-              <CircleCard title="Besties" subtitle="3 active now" active />
-              <CircleCard title="Family" subtitle="Always on" />
+              {loading ? (
+                <ActivityIndicator color={SOTERIA.colors.primary} />
+              ) : circles.length === 0 ? (
+                <Text style={{ color: SOTERIA.colors.muted, fontSize: 13 }}>
+                  No circles yet. Create one to get started!
+                </Text>
+              ) : (
+                circles.slice(0, 3).map((circle) => (
+                  <CircleCard
+                    key={circle.id}
+                    title={circle.name}
+                    subtitle={`${circle.members?.length || 0} members`}
+                    active={false}
+                  />
+                ))
+              )}
               <Pressable style={styles.newCircle} onPress={() => router.push("/(tabs)/circles")}>
                 <Ionicons name="add-circle" size={22} color={SOTERIA.colors.primary} />
                 <Text style={styles.newCircleText}>New Circle</Text>

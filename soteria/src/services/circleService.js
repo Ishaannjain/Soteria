@@ -23,12 +23,12 @@ export const createCircle = async (userId, circleData) => {
     const circleRef = await addDoc(collection(db, 'circles'), {
       name: circleData.name,
       ownerId: userId,
-      members: [], // Owner will be added separately
+      members: circleData.members || [], // Use provided members or empty array
       createdAt: new Date()
     });
-    
+
     console.log("Circle created with ID:", circleRef.id);
-    return circleRef.id;
+    return { id: circleRef.id, name: circleData.name, members: circleData.members || [], ownerId: userId };
   } catch (error) {
     console.error("Error creating circle:", error);
     throw error;
@@ -60,28 +60,35 @@ export const addMemberToCircle = async (circleId, memberData) => {
  */
 export const getUserCircles = async (userId) => {
   try {
+    console.log("Fetching circles for user:", userId);
+
     // Get circles where user is the owner
     const ownerQuery = query(
-      collection(db, 'circles'), 
+      collection(db, 'circles'),
       where('ownerId', '==', userId)
     );
     const ownerSnapshot = await getDocs(ownerQuery);
-    
+    console.log("Owner circles count:", ownerSnapshot.size);
+
     // Get circles where user is a member
     const memberQuery = query(
       collection(db, 'circles'),
       where('members', 'array-contains', { userId })
     );
     const memberSnapshot = await getDocs(memberQuery);
-    
+    console.log("Member circles count:", memberSnapshot.size);
+
     const circles = [];
     ownerSnapshot.forEach(doc => {
+      console.log("Owner circle:", doc.id, doc.data());
       circles.push({ id: doc.id, ...doc.data() });
     });
     memberSnapshot.forEach(doc => {
+      console.log("Member circle:", doc.id, doc.data());
       circles.push({ id: doc.id, ...doc.data() });
     });
-    
+
+    console.log("Total circles found:", circles.length);
     return circles;
   } catch (error) {
     console.error("Error fetching circles:", error);

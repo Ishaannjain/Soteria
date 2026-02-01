@@ -1,40 +1,72 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import React from "react";
+import { Tabs } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { SOTERIA } from "../theme";
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
+export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
+        tabBarShowLabel: true,
+        tabBarActiveTintColor: SOTERIA.colors.primary,
+        tabBarInactiveTintColor: "rgba(171,157,185,0.9)",
+        tabBarStyle: {
+          backgroundColor: "rgba(10,10,10,0.95)",
+          borderTopColor: "rgba(255,255,255,0.06)",
+          paddingTop: 10,
+          paddingBottom: 28,
+          height: 92,
+        },
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: "700",
+        },
+      }}
+    >
       <Tabs.Screen
-        name="index"
+        name="dashboard"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: "Home",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "home" : "home-outline"} size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="circles"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: "Circles",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "people" : "people-outline"} size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="map"
+        options={{
+          title: "Map",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "compass" : "compass-outline"} size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "person" : "person-outline"} size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="chat"
         options={{
           title: 'Assistant',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="message.fill" color={color} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "chatbubble" : "chatbubble-outline"} size={size} color={color} />
+          ),
         }}
       />
     </Tabs>

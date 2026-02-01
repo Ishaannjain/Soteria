@@ -6,28 +6,135 @@ import {
   ImageBackground,
   Pressable,
   TextInput,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import { SOTERIA } from "../theme";
+import { useAuth } from "../../src/contexts/AuthContext";
+import { router } from "expo-router";
+import { getUserCircles } from "../../src/services/circleService";
+import { getActiveSession, startSafeWalkSession, completeSession, triggerEmergency } from "../../src/services/sessionService";
+import { useSessionMonitor } from "../../src/hooks/useSessionMonitor";
 
 export default function MapScreen() {
-  // ===== TIMER =====
-  const [remaining, setRemaining] = useState(12 * 60 + 45); // 12:45
+  const { user } = useAuth();
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [circles, setCircles] = useState([]);
+
+  // Use session monitor hook
+  const { timeRemaining, needsCheckIn, handleCheckIn, triggerSOS } = useSessionMonitor(
+    session,
+    user?.email || "User"
+  );
+
+  // Bottom sheet snap points - must be called before any conditional returns
+  const snapPoints = useMemo(() => ["22%", "55%"], []);
 
   useEffect(() => {
-    const id = setInterval(() => {
-      setRemaining((r) => (r > 0 ? r - 1 : 0));
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
+    if (user) {
+      initializeSession();
+    }
+  }, [user]);
 
-  const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
-  const ss = String(remaining % 60).padStart(2, "0");
+  const initializeSession = async () => {
+    try {
+      setLoading(true);
+      const [activeSession, userCircles] = await Promise.all([
+        getActiveSession(user.uid),
+        getUserCircles(user.uid)
+      ]);
 
-  // ===== BOTTOM SHEET =====
-  const snapPoints = useMemo(() => ["22%", "55%"], []);
+      setCircles(userCircles);
+
+      if (activeSession) {
+        setSession(activeSession);
+      } else if (userCircles.length > 0) {
+        // Start a new session with the first circle
+        await startNewSession(userCircles[0].id);
+      } else {
+        Alert.alert("No Circles", "Please create a circle first", [
+          { text: "OK", onPress: () => router.push("/(tabs)/circles") }
+        ]);
+      }
+    } catch (error) {
+      console.error("Error initializing session:", error);
+      Alert.alert("Error", "Failed to initialize session");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startNewSession = async (circleId) => {
+    try {
+      const sessionData = {
+        userId: user.uid,
+        circleId: circleId,
+        timerDuration: 30, // 30 minutes default
+        destination: null,
+      };
+      const newSession = await startSafeWalkSession(sessionData);
+      setSession(newSession);
+    } catch (error) {
+      console.error("Error starting session:", error);
+      Alert.alert("Error", "Failed to start SafeWalk session");
+    }
+  };
+
+  const handleImSafe = async () => {
+    try {
+      await handleCheckIn();
+      Alert.alert("Success", "Session completed successfully!", [
+        { text: "OK", onPress: () => router.push("/(tabs)/dashboard") }
+      ]);
+    } catch (error) {
+      console.error("Error completing session:", error);
+      Alert.alert("Error", "Failed to complete session");
+    }
+  };
+
+  const handleSOS = async () => {
+    Alert.alert(
+      "Emergency SOS",
+      "Are you sure you want to send an emergency alert to your circle?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Send SOS",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await triggerSOS();
+              Alert.alert("SOS Sent", "Emergency alert has been sent to your circle members");
+            } catch (error) {
+              console.error("Error sending SOS:", error);
+              Alert.alert("Error", "Failed to send SOS");
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const formatTime = (seconds) => {
+    if (seconds === null) return { mm: "--", ss: "--" };
+    const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
+    const ss = String(seconds % 60).padStart(2, "0");
+    return { mm, ss };
+  };
+
+  const { mm, ss } = formatTime(timeRemaining);
+
+  if (loading) {
+    return (
+      <View style={[styles.root, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator size="large" color={SOTERIA.colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.root}>
@@ -60,8 +167,8 @@ export default function MapScreen() {
           </View>
         </View>
 
-        <Pressable style={styles.safeBtn}>
-          <Text style={styles.safeText}>I’m Safe</Text>
+        <Pressable style={styles.safeBtn} onPress={handleImSafe}>
+          <Text style={styles.safeText}>I'm Safe</Text>
         </Pressable>
       </View>
 
@@ -79,7 +186,7 @@ export default function MapScreen() {
 
       {/* SOS FLOATING BUTTON */}
       <View style={styles.sosFabWrap} pointerEvents="box-none">
-        <Pressable style={styles.sosFab}>
+        <Pressable style={styles.sosFab} onPress={handleSOS}>
           <Ionicons name="warning" size={26} color="white" />
           <Text style={styles.sosFabText}>SOS</Text>
         </Pressable>

@@ -8,19 +8,46 @@ import {
   TextInput,
   Switch,
   ScrollView,
+  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { SOTERIA } from "../theme";
+import { useAuth } from "../../src/contexts/AuthContext";
+import { router } from "expo-router";
 
 export default function ProfileScreen() {
-  const [name, setName] = useState("Sarah Jenkins");
-  const [handle, setHandle] = useState("@sarahj");
+  const { user, logOut } = useAuth();
+  const [name, setName] = useState(user?.email?.split('@')[0] || "User");
+  const [handle, setHandle] = useState(`@${user?.email?.split('@')[0] || "user"}`);
   const [shareDefault, setShareDefault] = useState(true);
   const [quietMode, setQuietMode] = useState(false);
 
-  const [emgName, setEmgName] = useState("Mom");
-  const [emgPhone, setEmgPhone] = useState("+1 (555) 123-4567");
+  const [emgName, setEmgName] = useState("");
+  const [emgPhone, setEmgPhone] = useState("");
+
+  const handleSignOut = async () => {
+    Alert.alert(
+      "Sign Out",
+      "Are you sure you want to sign out?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Sign Out",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await logOut();
+              router.replace("/");
+            } catch (error) {
+              console.error("Error signing out:", error);
+              Alert.alert("Error", "Failed to sign out");
+            }
+          }
+        }
+      ]
+    );
+  };
 
   return (
     <View style={styles.root}>
@@ -40,7 +67,7 @@ export default function ProfileScreen() {
           </View>
           <View>
             <Text style={styles.smallMuted}>Profile</Text>
-            <Text style={styles.nameText}>{name}</Text>
+            <Text style={styles.nameText}>{user?.email?.split('@')[0] || "User"}</Text>
           </View>
         </View>
 
@@ -73,7 +100,7 @@ export default function ProfileScreen() {
                 <Ionicons name="mail-outline" size={18} color="rgba(171,157,185,0.9)" />
                 <Text style={styles.actionText}>Email</Text>
               </View>
-              <Text style={styles.actionValue}>sarah@example.com</Text>
+              <Text style={styles.actionValue}>{user?.email || "Not available"}</Text>
             </Pressable>
           </View>
         </View>
@@ -169,7 +196,7 @@ export default function ProfileScreen() {
 
         {/* Sign Out */}
         <View style={styles.sectionPad}>
-          <Pressable style={styles.signOutBtn}>
+          <Pressable style={styles.signOutBtn} onPress={handleSignOut}>
             <Ionicons name="log-out-outline" size={18} color="#ef4444" />
             <Text style={styles.signOutText}>Sign Out</Text>
           </Pressable>
