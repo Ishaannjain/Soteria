@@ -106,16 +106,21 @@ export const useSessionMonitor = (session, userName) => {
   const handleMissedCheckIn = async () => {
     try {
       await triggerEmergency(session.id);
-      
+
       // Get circle members
       const circle = await getCircle(session.circleId);
-      const memberEmails = circle.members.map(m => m.email);
-      
-      // Send alerts
-      const location = await getCurrentLocation();
-      await sendEmergencyAlert(userName, location, memberEmails);
-      
-      console.log('Emergency alert sent');
+      const memberEmails = circle.members
+        .map(m => m.email)
+        .filter(email => email); // Filter out empty emails
+
+      if (memberEmails.length > 0) {
+        // Send alerts
+        const location = await getCurrentLocation();
+        await sendEmergencyAlert(userName, location, memberEmails);
+        console.log(`Emergency alert sent to ${memberEmails.length} members`);
+      } else {
+        console.log('No circle members with email addresses to alert');
+      }
     } catch (error) {
       console.error('Emergency escalation failed:', error);
     }
@@ -123,20 +128,28 @@ export const useSessionMonitor = (session, userName) => {
 
   /**
    * Manual SOS trigger
+   * Sends emergency alert emails to all circle members
    */
   const triggerSOS = async () => {
     try {
       await triggerEmergency(session.id);
-      
+
       const circle = await getCircle(session.circleId);
-      const memberEmails = circle.members.map(m => m.email);
-      
+      const memberEmails = circle.members
+        .map(m => m.email)
+        .filter(email => email); // Filter out empty emails
+
+      if (memberEmails.length === 0) {
+        throw new Error('No circle members with email addresses found');
+      }
+
       const location = await getCurrentLocation();
       await sendEmergencyAlert(userName, location, memberEmails);
-      
-      console.log('SOS triggered');
+
+      console.log(`SOS triggered - alerts sent to ${memberEmails.length} members`);
     } catch (error) {
       console.error('SOS failed:', error);
+      throw error; // Re-throw so caller can handle
     }
   };
 

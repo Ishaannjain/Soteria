@@ -1,14 +1,36 @@
-import emailjs from "@emailjs/browser";
-
-// EmailJS configuration (replace with your actual keys)
+// EmailJS configuration
 const EMAILJS_SERVICE_ID = "service_i65n67m";
 const EMAILJS_TEMPLATE_ID = "template_iod5xte";
 const EMAILJS_PUBLIC_KEY = "1RwOeqIi50oQZx9_G";
 
 /**
- * Initialize EmailJS
+ * Send email using EmailJS REST API (works in React Native)
+ * @param {object} templateParams - Template parameters
  */
-emailjs.init(EMAILJS_PUBLIC_KEY);
+const sendEmailViaREST = async (templateParams) => {
+  const data = {
+    service_id: EMAILJS_SERVICE_ID,
+    template_id: EMAILJS_TEMPLATE_ID,
+    user_id: EMAILJS_PUBLIC_KEY,
+    template_params: templateParams,
+  };
+
+  const response = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Origin": "http://localhost",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`EmailJS API error: ${response.status} - ${errorText}`);
+  }
+
+  return response;
+};
 
 /**
  * Send emergency alert to circle members
@@ -21,7 +43,7 @@ export const sendEmergencyAlert = async (userName, location, recipients) => {
     const mapLink = `https://www.google.com/maps?q=${location.lat},${location.lng}`;
 
     const promises = recipients.map((email) => {
-      return emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      return sendEmailViaREST({
         to_email: email,
         user_name: userName,
         last_location: `${location.lat}, ${location.lng}`,
