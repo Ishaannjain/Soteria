@@ -279,16 +279,9 @@ export default function MapScreen() {
 
       if (activeSession) {
         setSession(activeSession);
-        // Set destination from session if available
         if (activeSession.destination) {
           setCurrentDestination(activeSession.destination);
         }
-      } else if (userCircles.length > 0) {
-        await startNewSession(userCircles[0].id);
-      } else {
-        Alert.alert("No Circles", "Please create a circle first", [
-          { text: "OK", onPress: () => router.push("/(tabs)/circles") }
-        ]);
       }
     } catch (error) {
       console.error("Error initializing session:", error);
@@ -389,10 +382,32 @@ export default function MapScreen() {
   const activeCircle = circles.find((c: any) => c.id === session?.circleId);
   const circleName = activeCircle?.name || "Your Circle";
 
+  const handleBeginWalk = () => {
+    router.push("/safewalk-setup" as any);
+  };
+
   if (loading) {
     return (
       <View style={[styles.root, { justifyContent: "center", alignItems: "center" }]}>
         <ActivityIndicator size="large" color={SOTERIA.colors.primary} />
+      </View>
+    );
+  }
+
+  if (!session) {
+    return (
+      <View style={styles.root}>
+        <LinearGradient
+          colors={["#0a0a0a", "#0a0a0a"]}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.idleContent}>
+          <Text style={styles.idlePrompt}>Ready to go out?</Text>
+          <Pressable style={styles.beginWalkBtn} onPress={handleBeginWalk}>
+            <Ionicons name="walk" size={20} color="white" />
+            <Text style={styles.beginWalkText}>Begin Walk</Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
@@ -827,5 +842,32 @@ const styles = StyleSheet.create({
   },
   dirBtnActive: {
     backgroundColor: SOTERIA.colors.primary,
+  },
+
+  idleContent: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 24,
+    paddingHorizontal: 32,
+  },
+  idlePrompt: {
+    color: "rgba(171,157,185,0.9)",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  beginWalkBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: SOTERIA.colors.primary,
+    paddingHorizontal: 28,
+    paddingVertical: 16,
+    borderRadius: 999,
+  },
+  beginWalkText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "800",
   },
 });
