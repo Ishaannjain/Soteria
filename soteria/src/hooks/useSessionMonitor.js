@@ -77,12 +77,24 @@ export const useSessionMonitor = (session, userName) => {
    */
   const handleCheckIn = async () => {
     try {
+      // Clear all intervals and timeouts
       if (checkInTimeout.current) {
         clearTimeout(checkInTimeout.current);
+        checkInTimeout.current = null;
       }
+      if (locationInterval.current) {
+        clearInterval(locationInterval.current);
+        locationInterval.current = null;
+      }
+      if (timerInterval.current) {
+        clearInterval(timerInterval.current);
+        timerInterval.current = null;
+      }
+
       await completeSession(session.id);
       setNeedsCheckIn(false);
-      console.log('Check-in successful');
+      setTimeRemaining(null);
+      console.log('Check-in successful - session terminated');
     } catch (error) {
       console.error('Check-in failed:', error);
     }

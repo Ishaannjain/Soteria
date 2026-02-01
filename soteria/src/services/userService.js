@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 /**
@@ -12,12 +12,9 @@ export const createUserProfile = async (userId, userData) => {
     await setDoc(userRef, {
       email: userData.email,
       name: userData.name || '',
-      username: userData.username || '',
       phone: userData.phone || '',
-      photoURL: userData.photoURL || '',
       circles: [], // Empty array initially
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: new Date()
     });
     console.log("User profile created successfully");
   } catch (error) {
@@ -35,7 +32,7 @@ export const getUserProfile = async (userId) => {
   try {
     const userRef = doc(db, 'users', userId);
     const userSnap = await getDoc(userRef);
-    
+
     if (userSnap.exists()) {
       return { id: userSnap.id, ...userSnap.data() };
     } else {
@@ -48,21 +45,58 @@ export const getUserProfile = async (userId) => {
 };
 
 /**
- * Update user profile (creates if doesn't exist)
+ * Update user profile
  * @param {string} userId - Firebase Auth UID
  * @param {object} updates - Fields to update
  */
 export const updateUserProfile = async (userId, updates) => {
   try {
     const userRef = doc(db, 'users', userId);
-    // Use setDoc with merge to create document if it doesn't exist
-    await setDoc(userRef, {
-      ...updates,
-      updatedAt: new Date()
-    }, { merge: true });
+    await updateDoc(userRef, updates);
     console.log("User profile updated");
   } catch (error) {
     console.error("Error updating user profile:", error);
     throw error;
   }
+};
+
+/**
+ * Search users by name or email prefix
+ * @param {string} searchTerm - What the user typed
+ * @returns {Promise<array>} Matching user objects {id, name, email, phone}
+ */
+export const searchUsers = async (searchTerm) => {
+  if (!searchTerm || searchTerm.trim().length === 0) return [];
+
+  const term = searchTerm.trim();
+  const termLower = term.toLowerCase();
+
+  // Prefix match on name (as typed) and email (lowercased)
+  const nameQuery = query(
+    collection(db, 'users'),
+    where('name', '>=', term),
+    where('name', '<', term + '\uffff')
+  );
+
+  const emailQuery = query(
+    collection(db, 'users'),
+    where('email', '>=', termLower),
+    where('email', '<', termLower + '\uffff')
+  );
+
+  const [nameSnap, emailSnap] = await Promise.all([
+    getDocs(nameQuery),
+    getDocs(emailQuery)
+  ]);
+
+  // Merge and deduplicate by doc ID
+  const usersMap = new Map();
+  nameSnap.forEach(doc => {
+    if (!usersMap.has(doc.id)) usersMap.set(doc.id, { id: doc.id, ...doc.data() });
+  });
+  emailSnap.forEach(doc => {
+    if (!usersMap.has(doc.id)) usersMap.set(doc.id, { id: doc.id, ...doc.data() });
+  });
+
+  return Array.from(usersMap.values());
 };

@@ -16,7 +16,7 @@ import { SOTERIA } from "../theme";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { router } from "expo-router";
 import { getUserCircles } from "../../src/services/circleService";
-import { getActiveSession, startSafeWalkSession, completeSession } from "../../src/services/sessionService";
+import { getActiveSession, startSafeWalkSession } from "../../src/services/sessionService";
 import { useSessionMonitor } from "../../src/hooks/useSessionMonitor";
 import { getSafeSpots } from "../../src/services/mapService";
 import { formatDistance, getIconForType } from "../../src/services/placesService";
@@ -286,10 +286,10 @@ export default function MapScreen() {
 
   const handleReached = async () => {
     try {
-      if (session?.id) {
-        await completeSession(session.id);
-      }
+      // handleCheckIn clears all intervals and completes the session
       await handleCheckIn();
+      // Clear session state to prevent any lingering activity
+      setSession(null);
       Alert.alert("Great!", "You've reached your destination safely!", [
         { text: "OK", onPress: () => router.push("/(tabs)/dashboard") }
       ]);

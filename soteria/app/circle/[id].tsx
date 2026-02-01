@@ -7,7 +7,6 @@ import {
   Pressable,
   Alert,
   ActivityIndicator,
-  Share,
   TextInput,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -15,87 +14,91 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { SOTERIA } from "../theme";
 import { useAuth } from "../../src/contexts/AuthContext";
-import { getCircle, addMemberToCircle } from "../../src/services/circleService";
-import { startSafeWalkSession } from "../../src/services/sessionService";
-
-interface Circle {
-  id: string;
-  name: string;
-  members?: Array<{ userId?: string; email?: string; name?: string; phone?: string }>;
-  ownerId?: string;
-  createdAt?: any;
-}
+import { listenToCircle, addMemberToCircle } from "../../src/services/circleService";
+import { startSafeWalkSession, listenToCircleActiveSessions } from "../../src/services/sessionService";
+import { searchUsers } from "../../src/services/userService";
 
 export default function CircleDetails() {
   const { id } = useLocalSearchParams();
-  const { user, profile } = useAuth() as any;
-  const [circle, setCircle] = useState<Circle | null>(null);
+  const { user } = useAuth() as any;
+  const [circle, setCircle] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showAddMember, setShowAddMember] = useState(false);
-  const [memberEmail, setMemberEmail] = useState("");
-  const [memberName, setMemberName] = useState("");
-  const [memberPhone, setMemberPhone] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [walkingSessions, setWalkingSessions] = useState(new Map());
+  const [tick, setTick] = useState(0);
   const [timerMinutes, setTimerMinutes] = useState("30");
   const [destination, setDestination] = useState("");
 
+  // Real-time listener for circle data (members update instantly on all devices)
   useEffect(() => {
-    loadCircle();
+    if (!id) return;
+    setLoading(true);
+    const unsubscribe = listenToCircle(id as string, (circleData: any) => {
+      setCircle(circleData);
+      setLoading(false);
+    });
+    return () => unsubscribe();
   }, [id]);
 
-  const loadCircle = async () => {
-    try {
-      setLoading(true);
-      const circleData = await getCircle(id as string);
-      setCircle(circleData as Circle);
-    } catch (error) {
-      console.error("Error loading circle:", error);
-      Alert.alert("Error", "Failed to load circle details");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Listen for active sessions in this circle to show "Walking" badges + timers
+  useEffect(() => {
+    if (!id) return;
+    const unsubscribe = listenToCircleActiveSessions([id as string], user?.uid || "", (sessions: any[]) => {
+      setWalkingSessions(new Map(sessions.map((s) => [s.userId, s])));
+    });
+    return () => unsubscribe();
+  }, [id, user]);
 
-  const handleAddMember = async () => {
-    if (!memberEmail) {
-      Alert.alert("Error", "Please enter an email address");
+  // Tick every second to refresh countdown timers on walking badges
+  useEffect(() => {
+    if (walkingSessions.size === 0) return;
+    const interval = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(interval);
+  }, [walkingSessions.size]);
+
+  // Debounced search: fires 400ms after user stops typing
+  useEffect(() => {
+    if (!searchTerm.trim() || !circle) {
+      setSearchResults([]);
       return;
     }
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const results = await searchUsers(searchTerm.trim());
+        const existingIds = new Set(
+          circle.members?.map((m: any) => m.userId || m.email) || []
+        );
+        const filtered = results.filter(
+          (u: any) => !existingIds.has(u.id) && !existingIds.has(u.email) && u.id !== user.uid
+        );
+        setSearchResults(filtered);
+      } catch (e) {
+        console.error("Search error:", e);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm, circle]);
 
+  const handleAddMember = async (selectedUser: any) => {
     try {
       const memberData = {
-        userId: "", // Will be filled when they accept the invite
-        name: memberName || memberEmail.split('@')[0],
-        email: memberEmail,
-        phone: memberPhone,
-        photoURL: "", // Will be filled when they join
-        status: "pending", // Mark as pending until they join
+        userId: selectedUser.id,
+        name: selectedUser.name || selectedUser.email.split("@")[0],
+        email: selectedUser.email,
+        phone: selectedUser.phone || "",
       };
-
       await addMemberToCircle(id as string, memberData);
-      Alert.alert("Success", "Member added to circle!");
-      setShowAddMember(false);
-      setMemberEmail("");
-      setMemberName("");
-      setMemberPhone("");
-      loadCircle();
+      setSearchResults((prev) => prev.filter((u: any) => u.id !== selectedUser.id));
     } catch (error) {
       console.error("Error adding member:", error);
-      Alert.alert("Error", "Failed to add member");
-    }
-  };
-
-  const handleShareInviteLink = async () => {
-    try {
-      // Copy invite code to clipboard and show instructions
-      const inviteCode = id;
-      const message = `Join my circle "${circle?.name}" on Soteria!\n\nInvite Code: ${inviteCode}\n\nTo join:\n1. Open Soteria app\n2. Go to Circles tab\n3. Click "Join Circle"\n4. Enter code: ${inviteCode}`;
-
-      await Share.share({
-        message: message,
-        title: `Join ${circle?.name} on Soteria`,
-      });
-    } catch (error) {
-      console.error("Error sharing invite:", error);
+      Alert.alert("Error", "Failed to add member. Try again.");
     }
   };
 
@@ -187,35 +190,39 @@ export default function CircleDetails() {
               <Text style={styles.cardTitle}>Add Member</Text>
 
               <TextInput
-                placeholder="Email *"
+                placeholder="Search by name or email"
                 placeholderTextColor={SOTERIA.colors.muted}
-                value={memberEmail}
-                onChangeText={setMemberEmail}
-                keyboardType="email-address"
+                value={searchTerm}
+                onChangeText={setSearchTerm}
                 autoCapitalize="none"
                 style={styles.input}
+                autoFocus
               />
 
-              <TextInput
-                placeholder="Name (optional)"
-                placeholderTextColor={SOTERIA.colors.muted}
-                value={memberName}
-                onChangeText={setMemberName}
-                style={styles.input}
-              />
+              {isSearching && (
+                <ActivityIndicator size="small" color={SOTERIA.colors.primary} style={{ marginVertical: 12 }} />
+              )}
 
-              <TextInput
-                placeholder="Phone (optional)"
-                placeholderTextColor={SOTERIA.colors.muted}
-                value={memberPhone}
-                onChangeText={setMemberPhone}
-                keyboardType="phone-pad"
-                style={styles.input}
-              />
+              {!isSearching && searchTerm.trim().length > 0 && searchResults.length === 0 && (
+                <Text style={styles.noResultsText}>No users found</Text>
+              )}
 
-              <Pressable style={styles.addBtn} onPress={handleAddMember}>
-                <Text style={styles.addBtnText}>Add Member</Text>
-              </Pressable>
+              {searchResults.map((result: any) => (
+                <Pressable key={result.id} style={styles.searchResultRow} onPress={() => handleAddMember(result)}>
+                  <View style={styles.searchResultAvatar}>
+                    <Text style={styles.searchResultAvatarText}>
+                      {(result.name || result.email)[0]?.toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.searchResultInfo}>
+                    <Text style={styles.searchResultName}>
+                      {result.name || result.email.split("@")[0]}
+                    </Text>
+                    <Text style={styles.searchResultEmail}>{result.email}</Text>
+                  </View>
+                  <Ionicons name="add-circle-outline" size={22} color={SOTERIA.colors.primary} />
+                </Pressable>
+              ))}
             </View>
           )}
 
@@ -234,11 +241,19 @@ export default function CircleDetails() {
                     )}
                   </View>
                 </View>
-                {member.status === "pending" && (
+                {walkingSessions.has(member.userId) ? (
+                  <View style={styles.walkingBadge}>
+                    <View style={styles.walkingRow}>
+                      <Ionicons name="walk-outline" size={12} color="#34d399" />
+                      <Text style={styles.walkingText}>Walking</Text>
+                    </View>
+                    <Text style={styles.walkingTimer}>{getWalkTimer(walkingSessions.get(member.userId))}</Text>
+                  </View>
+                ) : member.status === "pending" ? (
                   <View style={styles.pendingBadge}>
                     <Text style={styles.pendingText}>Pending</Text>
                   </View>
-                )}
+                ) : null}
               </View>
             ))
           ) : (
@@ -248,14 +263,6 @@ export default function CircleDetails() {
               <Text style={styles.emptySubtext}>Add members to get started</Text>
             </View>
           )}
-        </View>
-
-        {/* Share Invite Link */}
-        <View style={styles.section}>
-          <Pressable style={styles.shareBtn} onPress={handleShareInviteLink}>
-            <Ionicons name="share-social" size={20} color="white" />
-            <Text style={styles.shareBtnText}>Share Invite Link</Text>
-          </Pressable>
         </View>
 
         {/* Start SafeWalk */}
@@ -296,6 +303,19 @@ export default function CircleDetails() {
       </ScrollView>
     </View>
   );
+}
+
+function getWalkTimer(session: any) {
+  const startTime = session.startTime?.toDate
+    ? session.startTime.toDate()
+    : new Date(session.startTime);
+  const remaining = Math.max(
+    0,
+    (session.timerDuration || 30) * 60 * 1000 - (Date.now() - startTime.getTime())
+  );
+  const mins = Math.floor(remaining / 60000);
+  const secs = Math.floor((remaining % 60000) / 1000);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
 const styles = StyleSheet.create({
@@ -421,12 +441,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(127,19,236,0.2)",
     alignItems: "center",
     justifyContent: "center",
-    overflow: "hidden",
-  },
-  memberAvatarImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 999,
   },
   memberName: {
     color: "white",
@@ -441,6 +455,29 @@ const styles = StyleSheet.create({
   memberPhone: {
     color: SOTERIA.colors.muted,
     fontSize: 11,
+    marginTop: 2,
+  },
+  walkingBadge: {
+    alignItems: "center",
+    backgroundColor: "rgba(52,211,153,0.15)",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  walkingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  walkingText: {
+    color: "#34d399",
+    fontSize: 11,
+    fontWeight: "900",
+  },
+  walkingTimer: {
+    color: "#34d399",
+    fontSize: 11,
+    fontWeight: "700",
     marginTop: 2,
   },
   pendingBadge: {
@@ -470,19 +507,46 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  shareBtn: {
-    height: 54,
-    borderRadius: 16,
-    backgroundColor: SOTERIA.colors.primary,
+  noResultsText: {
+    color: SOTERIA.colors.muted,
+    fontSize: 14,
+    textAlign: "center",
+    paddingVertical: 16,
+  },
+  searchResultRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
+    gap: 12,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.06)",
   },
-  shareBtnText: {
+  searchResultAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 999,
+    backgroundColor: "rgba(127,19,236,0.25)",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  searchResultAvatarText: {
     color: "white",
     fontSize: 15,
-    fontWeight: "900",
+    fontWeight: "700",
+  },
+  searchResultInfo: {
+    flex: 1,
+  },
+  searchResultName: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  searchResultEmail: {
+    color: SOTERIA.colors.muted,
+    fontSize: 12,
+    marginTop: 2,
   },
 
   safeWalkCard: {

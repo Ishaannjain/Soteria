@@ -1,14 +1,15 @@
-import { 
-  collection, 
-  doc, 
-  addDoc, 
+import {
+  collection,
+  doc,
+  addDoc,
   getDoc,
   getDocs,
-  updateDoc, 
+  updateDoc,
   query,
   where,
   orderBy,
-  limit
+  limit,
+  onSnapshot
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
@@ -31,7 +32,7 @@ export const startSafeWalkSession = async (sessionData) => {
       checkInStatus: 'pending',
       createdAt: new Date()
     });
-    
+
     console.log("SafeWalk session started:", sessionRef.id);
     return sessionRef.id;
   } catch (error) {
@@ -113,14 +114,14 @@ export const getActiveSession = async (userId) => {
       orderBy('startTime', 'desc'),
       limit(1)
     );
-    
+
     const querySnapshot = await getDocs(q);
-    
+
     if (!querySnapshot.empty) {
       const sessionDoc = querySnapshot.docs[0];
       return { id: sessionDoc.id, ...sessionDoc.data() };
     }
-    
+
     return null;
   } catch (error) {
     console.error("Error fetching active session:", error);
@@ -141,17 +142,52 @@ export const getSessionHistory = async (userId) => {
       orderBy('startTime', 'desc'),
       limit(20)
     );
-    
+
     const querySnapshot = await getDocs(q);
     const sessions = [];
-    
+
     querySnapshot.forEach(doc => {
       sessions.push({ id: doc.id, ...doc.data() });
     });
-    
+
     return sessions;
   } catch (error) {
     console.error("Error fetching session history:", error);
     throw error;
   }
+};
+
+/**
+ * Listen in real-time for active sessions in given circles, excluding currentUserId's own sessions.
+ * @param {string[]} circleIds - Circle IDs to watch
+ * @param {string} currentUserId - Current user's UID (to exclude own sessions)
+ * @param {function} callback - Called with array of active session objects whenever data changes
+ * @returns {function} Unsubscribe function
+ */
+export const listenToCircleActiveSessions = (circleIds, currentUserId, callback) => {
+  if (!circleIds || circleIds.length === 0) {
+    callback([]);
+    return () => {};
+  }
+
+  const q = query(
+    collection(db, 'safewalk-sessions'),
+    where('circleId', 'in', circleIds.slice(0, 10)),
+    where('status', '==', 'active')
+  );
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const sessions = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.userId !== currentUserId) {
+        sessions.push({ id: doc.id, ...data });
+      }
+    });
+    callback(sessions);
+  }, (error) => {
+    console.error('Error listening to circle sessions:', error);
+  });
+
+  return unsubscribe;
 };

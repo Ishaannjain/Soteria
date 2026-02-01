@@ -5,41 +5,30 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { SOTERIA } from "../theme";
 import { useAuth } from "../../src/contexts/AuthContext";
-import { getUserCircles, createCircle, getCircle, addMemberToCircle } from "../../src/services/circleService";
-
-interface Circle {
-  id: string;
-  name: string;
-  members?: Array<{ userId?: string; email?: string; name?: string; phone?: string }>;
-  ownerId?: string;
-}
+import { useNotification } from "../../src/contexts/NotificationContext";
+import { listenToUserCircles, createCircle, addMemberToCircle } from "../../src/services/circleService";
+import { searchUsers } from "../../src/services/userService";
 
 export default function CirclesScreen() {
-  const { user, profile } = useAuth() as any;
-  const [circles, setCircles] = useState<Circle[]>([]);
+  const { user } = useAuth() as any;
+  const { activeCircleIds } = useNotification();
+  const [circles, setCircles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showJoinModal, setShowJoinModal] = useState(false);
-  const [joinCode, setJoinCode] = useState("");
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [selectedCircle, setSelectedCircle] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      loadCircles();
-    }
-  }, [user]);
-
-  const loadCircles = async () => {
-    try {
-      setLoading(true);
-      const userCircles = await getUserCircles(user.uid);
+    if (!user) return;
+    setLoading(true);
+    const unsubscribe = listenToUserCircles(user.uid, (userCircles: any[]) => {
       setCircles(userCircles);
-    } catch (error) {
-      console.error("Error loading circles:", error);
-      Alert.alert("Error", "Failed to load circles");
-    } finally {
       setLoading(false);
-    }
-  };
+    });
+    return () => unsubscribe();
+  }, [user]);
 
   const handleCreateCircle = async () => {
     try {
@@ -51,16 +40,15 @@ export default function CirclesScreen() {
         members: [
           {
             userId: user.uid,
-            name: profile?.name || user.email?.split('@')[0] || "User",
+            name: user.email?.split('@')[0] || "User",
             email: user.email,
-            phone: profile?.phone || "",
+            phone: "",
           },
         ],
       };
 
       await createCircle(user.uid, circleData);
       Alert.alert("Success", `Circle "${circleName}" created!`);
-      loadCircles();
     } catch (error) {
       console.error("Error creating circle:", error);
       Alert.alert("Error", "Failed to create circle");
@@ -81,46 +69,62 @@ export default function CirclesScreen() {
     });
   };
 
-  const handleJoinCircle = async () => {
-    if (!joinCode.trim()) {
-      Alert.alert("Error", "Please enter an invite code");
+  // Debounced search: fires 400ms after user stops typing
+  useEffect(() => {
+    if (!searchTerm.trim() || !selectedCircle) {
+      setSearchResults([]);
       return;
     }
-
-    try {
-      // Get circle details
-      const circle = await getCircle(joinCode.trim());
-
-      // Check if already a member
-      const isMember = (circle as Circle).members?.some(
-        (member: any) => member.email === user.email || member.userId === user.uid
-      );
-
-      if (isMember) {
-        Alert.alert("Already Joined", "You're already a member of this circle!");
-        setShowJoinModal(false);
-        setJoinCode("");
-        return;
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const results = await searchUsers(searchTerm.trim());
+        // Filter out users already in this circle and the current user
+        const existingIds = new Set(
+          selectedCircle.members?.map((m: any) => m.userId || m.email) || []
+        );
+        const filtered = results.filter(
+          (u: any) => !existingIds.has(u.id) && !existingIds.has(u.email) && u.id !== user.uid
+        );
+        setSearchResults(filtered);
+      } catch (e) {
+        console.error("Search error:", e);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
       }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm, selectedCircle]);
 
-      // Add user to circle
+  const handleAddMember = async (selectedUser: any) => {
+    try {
       const memberData = {
-        userId: user.uid,
-        name: profile?.name || user.email?.split('@')[0] || "User",
-        email: user.email,
-        phone: profile?.phone || "",
-        status: "active",
+        userId: selectedUser.id,
+        name: selectedUser.name || selectedUser.email.split("@")[0],
+        email: selectedUser.email,
+        phone: selectedUser.phone || "",
       };
-
-      await addMemberToCircle(joinCode.trim(), memberData);
-      Alert.alert("Success", `You've joined "${(circle as Circle).name}"!`);
-      setShowJoinModal(false);
-      setJoinCode("");
-      loadCircles();
+      await addMemberToCircle(selectedCircle.id, memberData);
+      setSearchResults((prev) => prev.filter((u: any) => u.id !== selectedUser.id));
     } catch (error) {
-      console.error("Error joining circle:", error);
-      Alert.alert("Error", "Failed to join circle. Check the code and try again.");
+      console.error("Error adding member:", error);
+      Alert.alert("Error", "Failed to add member. Try again.");
     }
+  };
+
+  const openAddMember = (circle: any) => {
+    setSelectedCircle(circle);
+    setSearchTerm("");
+    setSearchResults([]);
+    setShowAddMemberModal(true);
+  };
+
+  const closeAddMember = () => {
+    setShowAddMemberModal(false);
+    setSelectedCircle(null);
+    setSearchTerm("");
+    setSearchResults([]);
   };
   return (
     <View style={styles.root}>
@@ -141,34 +145,6 @@ export default function CirclesScreen() {
             <Ionicons name="add-circle" size={20} color="white" />
             <Text style={styles.primaryBtnText}>Create New Circle</Text>
           </Pressable>
-        </View>
-
-        {/* Join Circle */}
-        <View style={styles.sectionPad}>
-          <Pressable
-            style={styles.secondaryBtn}
-            onPress={() => setShowJoinModal(!showJoinModal)}
-          >
-            <Ionicons name="enter" size={20} color={SOTERIA.colors.primary} />
-            <Text style={styles.secondaryBtnText}>Join Circle with Code</Text>
-          </Pressable>
-
-          {showJoinModal && (
-            <View style={styles.joinModal}>
-              <Text style={styles.modalTitle}>Enter Invite Code</Text>
-              <TextInput
-                placeholder="Paste invite code here"
-                placeholderTextColor={SOTERIA.colors.muted}
-                value={joinCode}
-                onChangeText={setJoinCode}
-                autoCapitalize="none"
-                style={styles.codeInput}
-              />
-              <Pressable style={styles.joinBtn} onPress={handleJoinCircle}>
-                <Text style={styles.joinBtnText}>Join Circle</Text>
-              </Pressable>
-            </View>
-          )}
         </View>
 
         {/* Quick Security Check */}
@@ -219,12 +195,13 @@ export default function CirclesScreen() {
                 >
                   <CircleTile
                     title={circle.name}
-                    subtitle={`${circle.members?.length || 0} members • Active`}
-                    active
+                    subtitle={`${circle.members?.length || 0} members${activeCircleIds.has(circle.id) ? ' • Someone is walking' : ''}`}
+                    active={activeCircleIds.has(circle.id)}
                     image={`https://picsum.photos/300/300?random=${index + 11}`}
                     avatars={circle.members?.slice(0, 3).map((_: any, i: number) =>
                       `https://i.pravatar.cc/100?img=${i + 12}`
                     ) || []}
+                    onAddMember={() => openAddMember(circle)}
                   />
                 </Pressable>
               ))}
@@ -238,6 +215,61 @@ export default function CirclesScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Add Member Modal */}
+      {showAddMemberModal && selectedCircle && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalTopRow}>
+              <Text style={styles.modalTitle}>Add to "{selectedCircle.name}"</Text>
+              <Pressable onPress={closeAddMember}>
+                <Ionicons name="close" size={22} color="rgba(255,255,255,0.6)" />
+              </Pressable>
+            </View>
+
+            <TextInput
+              placeholder="Search by name or email"
+              placeholderTextColor={SOTERIA.colors.muted}
+              value={searchTerm}
+              onChangeText={setSearchTerm}
+              autoCapitalize="none"
+              style={styles.searchInput}
+              autoFocus
+            />
+
+            {isSearching && (
+              <ActivityIndicator size="small" color={SOTERIA.colors.primary} style={{ marginVertical: 16 }} />
+            )}
+
+            {!isSearching && searchTerm.trim().length > 0 && searchResults.length === 0 && (
+              <Text style={styles.noResultsText}>No users found</Text>
+            )}
+
+            <ScrollView style={styles.resultsList} showsVerticalScrollIndicator={false}>
+              {searchResults.map((result: any) => (
+                <Pressable
+                  key={result.id}
+                  style={styles.resultRow}
+                  onPress={() => handleAddMember(result)}
+                >
+                  <View style={styles.resultAvatar}>
+                    <Text style={styles.resultAvatarText}>
+                      {(result.name || result.email)[0]?.toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.resultInfo}>
+                    <Text style={styles.resultName}>
+                      {result.name || result.email.split("@")[0]}
+                    </Text>
+                    <Text style={styles.resultEmail}>{result.email}</Text>
+                  </View>
+                  <Ionicons name="add-circle-outline" size={22} color={SOTERIA.colors.primary} />
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -249,6 +281,7 @@ function CircleTile({
   avatars,
   active,
   inactive,
+  onAddMember,
 }: {
   title: string;
   subtitle: string;
@@ -256,6 +289,7 @@ function CircleTile({
   avatars: string[];
   active?: boolean;
   inactive?: boolean;
+  onAddMember?: () => void;
 }) {
   return (
     <View style={[styles.tile, inactive ? { opacity: 0.75 } : null]}>
@@ -282,7 +316,7 @@ function CircleTile({
 
       <Text style={styles.tileSub}>{subtitle}</Text>
 
-      <Pressable style={styles.addMemberRow}>
+      <Pressable style={styles.addMemberRow} onPress={onAddMember}>
         <Ionicons name="person-add" size={14} color={SOTERIA.colors.primary} />
         <Text style={styles.addMemberText}>Add Member</Text>
       </Pressable>
@@ -318,34 +352,38 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: { color: "white", fontWeight: "900", fontSize: 15 },
 
-  secondaryBtn: {
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: "rgba(127,19,236,0.15)",
+  modalOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "flex-end",
+    zIndex: 100,
+  },
+  modalContainer: {
+    backgroundColor: "#16111d",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     borderWidth: 1,
-    borderColor: "rgba(127,19,236,0.3)",
+    borderColor: "rgba(255,255,255,0.06)",
+    padding: 20,
+    paddingBottom: 40,
+    maxHeight: "70%",
+  },
+  modalTopRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-  },
-  secondaryBtnText: { color: SOTERIA.colors.primary, fontWeight: "900", fontSize: 15 },
-
-  joinModal: {
-    marginTop: 16,
-    backgroundColor: "#16111d",
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "rgba(127,19,236,0.3)",
+    justifyContent: "space-between",
+    marginBottom: 16,
   },
   modalTitle: {
     color: "white",
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "900",
-    marginBottom: 12,
   },
-  codeInput: {
+  searchInput: {
     height: 54,
     borderRadius: 14,
     borderWidth: 1,
@@ -354,19 +392,51 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     color: "white",
     fontSize: 16,
-    marginBottom: 12,
   },
-  joinBtn: {
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: SOTERIA.colors.primary,
+  noResultsText: {
+    color: SOTERIA.colors.muted,
+    fontSize: 14,
+    textAlign: "center",
+    paddingVertical: 24,
+  },
+  resultsList: {
+    marginTop: 12,
+    maxHeight: 260,
+  },
+  resultRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.06)",
+  },
+  resultAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 999,
+    backgroundColor: "rgba(127,19,236,0.25)",
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
-  joinBtnText: {
+  resultAvatarText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  resultInfo: {
+    flex: 1,
+  },
+  resultName: {
     color: "white",
     fontSize: 15,
-    fontWeight: "900",
+    fontWeight: "700",
+  },
+  resultEmail: {
+    color: SOTERIA.colors.muted,
+    fontSize: 12,
+    marginTop: 2,
   },
 
   alertCard: {

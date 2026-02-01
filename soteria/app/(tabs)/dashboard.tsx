@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Pressable, Image, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { SOTERIA } from "../theme";
 import { router } from "expo-router";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { getUserCircles } from "../../src/services/circleService";
-import { getActiveSession } from "../../src/services/sessionService";
+import { getActiveSession, triggerEmergency } from "../../src/services/sessionService";
 
 interface Circle {
   id: string;
@@ -15,9 +15,9 @@ interface Circle {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth() as any;
+  const { user, profile } = useAuth() as any;
   const [circles, setCircles] = useState<Circle[]>([]);
-  const [activeSession, setActiveSession] = useState(null);
+  const [activeSession, setActiveSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -50,6 +50,33 @@ export default function Dashboard() {
     router.push("/safewalk-setup" as any);
   };
 
+  const handleSOS = async () => {
+    Alert.alert(
+      "Emergency SOS",
+      "Are you sure you want to send an emergency alert to your circle?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Send SOS",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              if (activeSession) {
+                await triggerEmergency(activeSession.id);
+                Alert.alert("SOS Sent", "Emergency alert has been sent to your circle members");
+              } else {
+                Alert.alert("No Active Session", "Please start a SafeWalk session first");
+              }
+            } catch (error) {
+              console.error("Error sending SOS:", error);
+              Alert.alert("Error", "Failed to send SOS");
+            }
+          }
+        }
+      ]
+    );
+  };
+
   if (!user) {
     return (
       <View style={[styles.root, { justifyContent: "center", alignItems: "center" }]}>
@@ -68,14 +95,11 @@ export default function Dashboard() {
       <View style={styles.topBar}>
         <View style={styles.profileRow}>
           <View style={styles.avatarRing}>
-            <Image
-              source={{ uri: "https://i.pravatar.cc/120?img=32" }}
-              style={styles.avatar}
-            />
+            <Ionicons name="person" size={24} color={SOTERIA.colors.primary} />
           </View>
           <View>
             <Text style={styles.smallMuted}>Good evening,</Text>
-            <Text style={styles.name}>{user?.email?.split('@')[0] || "User"}</Text>
+            <Text style={styles.name}>{profile?.name || user?.email?.split('@')[0] || "User"}</Text>
           </View>
         </View>
 
@@ -148,37 +172,35 @@ export default function Dashboard() {
         </View>
 
         {/* My Circles */}
-        <View style={[styles.sectionPad, { paddingTop: 4 }]}>
+        <View style={[styles.sectionPad, { paddingTop: 20 }]}>
           <View style={styles.rowBetween}>
             <Text style={styles.sectionTitle}>My Circles</Text>
             <Pressable onPress={() => router.push("/(tabs)/circles")}>
-  <Text style={styles.link}>See all</Text>
-</Pressable>
-
+              <Text style={styles.link}>See all</Text>
+            </Pressable>
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={{ flexDirection: "row", gap: 14, paddingVertical: 10 }}>
               {loading ? (
                 <ActivityIndicator color={SOTERIA.colors.primary} />
-              ) : circles.length === 0 ? (
-                <Text style={{ color: SOTERIA.colors.muted, fontSize: 13 }}>
-                  No circles yet. Create one to get started!
-                </Text>
               ) : (
-                circles.slice(0, 3).map((circle) => (
-                  <CircleCard
-                    key={circle.id}
-                    title={circle.name}
-                    subtitle={`${circle.members?.length || 0} members`}
-                    active={false}
-                  />
-                ))
+                <>
+                  {circles.slice(0, 3).map((circle) => (
+                    <CircleCard
+                      key={circle.id}
+                      id={circle.id}
+                      title={circle.name}
+                      subtitle={`${circle.members?.length || 0} members`}
+                      active={false}
+                    />
+                  ))}
+                  <Pressable style={styles.newCircle} onPress={() => router.push("/(tabs)/circles")}>
+                    <Ionicons name="add-circle" size={22} color={SOTERIA.colors.primary} />
+                    <Text style={styles.newCircleText}>New Circle</Text>
+                  </Pressable>
+                </>
               )}
-              <Pressable style={styles.newCircle} onPress={() => router.push("/(tabs)/circles")}>
-                <Ionicons name="add-circle" size={22} color={SOTERIA.colors.primary} />
-                <Text style={styles.newCircleText}>New Circle</Text>
-              </Pressable>
             </View>
           </ScrollView>
         </View>
@@ -195,7 +217,7 @@ export default function Dashboard() {
 
         {/* SOS */}
         <View style={styles.sectionPad}>
-          <Pressable style={styles.sosRow}>
+          <Pressable style={styles.sosRow} onPress={handleSOS}>
             <Ionicons name="warning" size={18} color="#ef4444" />
             <Text style={styles.sosText}>SOS EMERGENCY</Text>
           </Pressable>
@@ -205,18 +227,21 @@ export default function Dashboard() {
   );
 }
 
-function CircleCard({ title, subtitle, active }: { title: string; subtitle: string; active?: boolean }) {
+function CircleCard({ title, subtitle, active, id }: { title: string; subtitle: string; active?: boolean; id?: string }) {
   return (
-    <View style={styles.circleCard}>
+    <Pressable
+      style={styles.circleCard}
+      onPress={() => id && router.push(`/circle/${id}` as any)}
+    >
       <View style={{ position: "relative", marginBottom: 10 }}>
         <View style={[styles.circleAvatarRing, { borderColor: active ? SOTERIA.colors.primary : "#334155" }]}>
-          <Image source={{ uri: "https://picsum.photos/100" }} style={styles.circleAvatar} />
+          <Ionicons name="people" size={32} color={SOTERIA.colors.primary} />
         </View>
         {active ? <View style={styles.activeDot} /> : null}
       </View>
       <Text style={styles.circleTitle} numberOfLines={1}>{title}</Text>
       <Text style={styles.circleSub}>{subtitle}</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -273,7 +298,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 2,
     borderColor: "rgba(140,43,238,0.30)",
-    overflow: "hidden",
+    backgroundColor: "rgba(140,43,238,0.14)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   avatar: { width: "100%", height: "100%" },
 
@@ -371,6 +398,8 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 2,
     overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
   },
   circleAvatar: { width: "100%", height: "100%" },
   activeDot: {
